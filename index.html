@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EL SOCIÓPATA — Juego Educativo de Ciberseguridad</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Share+Tech+Mono&family=Oswald:wght@300;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #c0392b;
+    --accent2: #e74c3c;
+    --gold: #f39c12;
+    --green: #27ae60;
+    --text: #dcdce0;
+    --muted: #7a7a8a;
+    --evil: #8e44ad;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(192,57,43,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(142,68,173,0.06) 0%, transparent 60%);
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  #game {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* SCREENS */
+  .screen { display: none; animation: fadeIn 0.5s ease; }
+  .screen.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* HEADER */
+  .logo {
+    text-align: center;
+    padding: 40px 0 20px;
+  }
+  .logo-title {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 40px rgba(231,76,60,0.5), 2px 2px 0 #000;
+    line-height: 1;
+  }
+  .logo-sub {
+    font-family: 'Special Elite', cursive;
+    color: var(--gold);
+    font-size: 1rem;
+    letter-spacing: 0.3em;
+    margin-top: 8px;
+    opacity: 0.85;
+  }
+  .logo-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    letter-spacing: 0.2em;
+    margin-top: 10px;
+    border-radius: 2px;
+  }
+
+  /* STATS BAR */
+  #statsBar {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: sticky;
+    top: 10px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .stat-item { text-align: center; }
+  .stat-label { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.2em; }
+  .stat-value { font-size: 1.1rem; color: var(--gold); font-weight: bold; }
+  .stat-value.evil-pts { color: var(--accent2); }
+  .stat-value.rep { color: var(--green); }
+
+  /* CARDS */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-red { border-color: rgba(192,57,43,0.5); border-left: 4px solid var(--accent); }
+  .card-gold { border-color: rgba(243,156,18,0.5); border-left: 4px solid var(--gold); }
+  .card-green { border-color: rgba(39,174,96,0.4); border-left: 4px solid var(--green); }
+  .card-purple { border-color: rgba(142,68,173,0.4); border-left: 4px solid var(--evil); }
+
+  /* VICTIM CARD */
+  .victim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .victim-card::before {
+    content: '🎯';
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    font-size: 2rem;
+    opacity: 0.15;
+  }
+  .victim-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .victim-role {
+    color: var(--muted);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    margin: 4px 0 10px;
+  }
+  .victim-desc {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--text);
+    font-family: 'Special Elite', cursive;
+  }
+
+  /* THOUGHT BUBBLE */
+  .evil-thought {
+    background: rgba(142,68,173,0.1);
+    border: 1px solid rgba(142,68,173,0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-family: 'Special Elite', cursive;
+    font-size: 0.9rem;
+    color: #c39bd3;
+    position: relative;
+  }
+  .evil-thought::before { content: '💭 '; }
+
+  /* OPTIONS */
+  .options-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+  .option-btn {
+    display: block;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px 18px;
+    text-align: left;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .option-btn:hover {
+    background: rgba(192,57,43,0.12);
+    border-color: var(--accent);
+    color: #fff;
+    transform: translateX(4px);
+  }
+  .option-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .option-badge.safe { background: var(--green); }
+  .option-badge.risky { background: var(--gold); color: #000; }
+
+  /* RESULT PANEL */
+  .result-panel {
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 16px;
+    animation: fadeIn 0.4s ease;
+  }
+  .result-panel.success { background: rgba(192,57,43,0.12); border: 1px solid rgba(192,57,43,0.4); }
+  .result-panel.fail { background: rgba(39,174,96,0.08); border: 1px solid rgba(39,174,96,0.3); }
+
+  .result-emoji { font-size: 2.5rem; margin-bottom: 10px; }
+  .result-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+  }
+  .result-desc {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+
+  /* EDUCATION BOX */
+  .edu-box {
+    background: rgba(243,156,18,0.07);
+    border: 1px solid rgba(243,156,18,0.25);
+    border-radius: 6px;
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .edu-box-title {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .edu-box p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: #d4ac0d;
+    font-family: 'Special Elite', cursive;
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn-red { background: var(--accent); color: white; }
+  .btn-red:hover { background: var(--accent2); box-shadow: 0 0 20px rgba(231,76,60,0.4); }
+  .btn-gold { background: var(--gold); color: #000; }
+  .btn-gold:hover { background: #f1c40f; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent2); }
+
+  /* PROGRESS */
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 16px 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--evil));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  /* CASE COUNTER */
+  .case-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .case-num {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+  }
+  .case-type-badge {
+    background: rgba(142,68,173,0.2);
+    border: 1px solid rgba(142,68,173,0.4);
+    color: #c39bd3;
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.15em;
+  }
+
+  /* FINAL SCREEN */
+  .final-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .final-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    text-align: center;
+  }
+  .final-stat .num { font-size: 2rem; font-family: 'Oswald', sans-serif; color: var(--gold); }
+  .final-stat .lbl { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.15em; }
+
+  .verdict {
+    text-align: center;
+    padding: 30px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .verdict-emoji { font-size: 4rem; }
+  .verdict-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.8rem;
+    margin: 12px 0 8px;
+    color: var(--gold);
+  }
+
+  /* NAME INPUT */
+  .input-group { margin: 20px 0; }
+  .input-group label { display: block; font-size: 0.75rem; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 8px; }
+  .input-group input, .input-group select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus, .input-group select:focus { border-color: var(--accent); }
+  .input-group select option { background: var(--surface); }
+
+  /* SCORE FLASH */
+  .score-flash {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Oswald', sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    pointer-events: none;
+    z-index: 1000;
+    animation: scoreAnim 1.2s ease forwards;
+    text-shadow: 0 0 30px currentColor;
+  }
+  @keyframes scoreAnim {
+    0% { opacity: 0; transform: translate(-50%,-70%) scale(0.5); }
+    30% { opacity: 1; transform: translate(-50%,-50%) scale(1.2); }
+    70% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-30%) scale(0.8); }
+  }
+
+  /* DETECTIVE ALERT */
+  .detective-alert {
+    background: rgba(39,174,96,0.1);
+    border: 1px solid rgba(39,174,96,0.3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: #82e0aa;
+    display: none;
+  }
+
+  hr.evil { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  @media (max-width: 600px) {
+    .final-grid { grid-template-columns: 1fr; }
+    #statsBar { position: relative; }
+  }
+</style>
+</head>
+<body>
+<div id="game">
+
+  <!-- STATS BAR -->
+  <div id="statsBar">
+    <div class="stat-item">
+      <div class="stat-label">PERSONAJE</div>
+      <div class="stat-value" id="statName">—</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">PUNTOS MALICIA</div>
+      <div class="stat-value evil-pts" id="statEvil">0</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">VÍCTIMAS</div>
+      <div class="stat-value" id="statVictims">0</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">SOSPECHA RRHH</div>
+      <div class="stat-value rep" id="statSuspicion">0%</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">CASO</div>
+      <div class="stat-value" id="statCase">0/30</div>
+    </div>
+  </div>
+
+  <!-- SCREEN: INTRO -->
+  <div id="screenIntro" class="screen active">
+    <div class="logo">
+      <div class="logo-title">EL SOCIÓPATA</div>
+      <div class="logo-sub">JUEGO EDUCATIVO DE CIBERSEGURIDAD</div>
+      <div class="logo-badge">📚 BASADO EN TEMAS 7 Y 8 — UNIR</div>
+    </div>
+
+    <div class="card card-red" style="margin-top:30px">
+      <p style="font-size:0.9rem;line-height:1.8;font-family:'Special Elite',cursive;">
+        Llevas 3 años en Tecnofiable S.L. y <strong style="color:var(--accent2)">odias a todo el mundo</strong>. 
+        Tu jefe te ignoró en la reunión del martes. La de RRHH te miró raro en el pasillo. 
+        El de contabilidad se comió tu yogur. Y el becario... el becario respira muy fuerte.<br><br>
+        Ha llegado el momento de la venganza. Y tú conoces el mundo de los ciberdelitos.
+        <strong style="color:var(--gold)">Que empiece el espectáculo.</strong>
+      </p>
+    </div>
+
+    <div class="card" style="background:rgba(243,156,18,0.05);border-color:rgba(243,156,18,0.2);margin-top:8px">
+      <p style="font-size:0.75rem;color:var(--gold);line-height:1.7;">
+        ⚠️ <strong>NOTA EDUCATIVA:</strong> Este juego es una simulación satírica con fines 100% didácticos. 
+        Al final de cada caso aprenderás cómo funciona realmente el fraude y cómo detectarlo. 
+        Ninguna acción descrita debe realizarse en la vida real — son delitos tipificados en el Código Penal.
+      </p>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="input-group">
+        <label>PRIMERO... ¿ERES?</label>
+        <select id="generoSelect">
+          <option value="un">Un sociópata</option>
+          <option value="una">Una sociópata</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>¿CÓMO TE LLAMAS, VILLANO/A?</label>
+        <input type="text" id="playerName" placeholder="Tu nombre..." maxlength="20">
+      </div>
+      <button class="btn btn-red" onclick="startGame()" style="margin-top:10px;width:100%;">
+        😈 EMPEZAR A SER HORRIBLE
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN: CASE -->
+  <div id="screenCase" class="screen">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div id="caseContent"></div>
+  </div>
+
+  <!-- SCREEN: RESULT -->
+  <div id="screenResult" class="screen">
+    <div id="resultContent"></div>
+  </div>
+
+  <!-- SCREEN: FINAL -->
+  <div id="screenFinal" class="screen">
+    <div id="finalContent"></div>
+  </div>
+
+</div>
+
+<script>
+// ========== GAME STATE ==========
+let state = {
+  name: '',
+  genero: 'un',
+  evilPoints: 0,
+  victims: 0,
+  suspicion: 0,
+  caseIndex: 0,
+  successCount: 0,
+  failCount: 0
+};
+
+let shuffledCases = [];
+
+function shuffleCases() {
+  // Keep last case (the big finale) always at the end
+  const lastCase = cases[cases.length - 1];
+  const rest = cases.slice(0, cases.length - 1);
+  // Fisher-Yates shuffle
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  shuffledCases = [...rest, lastCase];
+}
+
+// ========== CASES DATA ==========
+const cases = [
+  {
+    id: 1,
+    type: 'PHISHING',
+    victim: 'Rodrigo "El Lameculos" Martínez',
+    role: 'Gerente Regional',
+    victimDesc: 'Rodrigo lleva un traje de 3 piezas en pleno agosto. Dice "sinergia" y "paradigma" en cada frase. Te ignoró completamente en la reunión de estrategia del lunes. Inaceptable.',
+    thought: 'Rodrigo usa la banca online desde su móvil en horario de trabajo. Lo he visto. Y además es el tipo de persona que abre TODOS los correos que recibe.',
+    question: '¿Cómo atacas a Rodrigo?',
+    options: [
+      { text: '📧 Le envías un correo haciéndote pasar por el Banco Santander, diciéndole que su cuenta ha sido bloqueada por actividad sospechosa. Incluyes un enlace a una web clonada perfecta.', type: 'phishing_email', points: 40, success: true },
+      { text: '📱 Le mandas un SMS (smishing) desde un número desconocido diciendo que hay un cargo de 847€ en su tarjeta y que pulse el enlace para verificarlo.', type: 'smishing', points: 35, success: true },
+      { text: '📮 Le dejas una nota en papel en su escritorio diciendo que le deben dinero de Hacienda.', type: 'paper', points: 0, success: false },
+      { text: '🤷 No haces nada y te vas a por un café.', type: 'nothing', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '😈',
+      title: '¡Rodrigo ha mordido el anzuelo!',
+      desc: 'Rodrigo, con su arrogancia corporativa, clicó sin pensarlo dos veces en el enlace. La página clonada captó sus credenciales bancarias. La urgencia del mensaje ("su cuenta será bloqueada en 24h") le impidió reflexionar. ¡Objetivo conseguido!',
+      edu: '🎓 LO QUE ACABAS DE APRENDER: El phishing bancario funciona creando urgencia para que la víctima no tenga tiempo de reflexionar. Las señales de alerta son: correo de remitente sospechoso, enlace que no coincide con el dominio oficial, y solicitud de datos sensibles. Los bancos NUNCA piden credenciales por correo. Revisa siempre el dominio real pasando el cursor sobre el enlace.'
+    },
+    failResult: {
+      emoji: '🙄',
+      title: 'Eso no va a funcionar...',
+      desc: 'Una nota de papel en 2025... ¿en serio? Rodrigo la tiró sin leerla pensando que era publicidad de la cafetería. Has desperdiciado una oportunidad perfecta.',
+      edu: '🎓 LO QUE DEBERÍAS SABER: Los métodos de phishing modernos utilizan canales digitales (email, SMS, WhatsApp) porque permiten el envío masivo, la suplantación de identidad y la creación de páginas web falsas. La ingeniería social por medios físicos tiene un alcance muy limitado comparado con los ataques digitales.'
+    }
+  },
+
+  {
+    id: 2,
+    type: 'SMISHING',
+    victim: 'Paloma "La Chivata" Fdez.',
+    role: 'Técnica de RRHH',
+    victimDesc: 'Paloma te reportó a RRHH por llegar 7 minutos tarde el pasado martes. SIETE MINUTOS. Tiene una taza que pone "Boss Lady" y colecciona Post-its de colores. Tu némesis absoluta.',
+    thought: 'Paloma siempre tiene el móvil en la mano. Si le llega un mensaje urgente, lo abrirá aunque esté durmiendo. Y además acaba de comprar un coche nuevo... debe tener cuenta bancaria activa.',
+    question: '¿Tu plan de ataque?',
+    options: [
+      { text: '📱 Envías un SMS suplantando a Laboral Kutxa: "Se ha realizado un cargo de 439,55€ en su cuenta. Si no reconoce esta actividad, verifique inmediatamente: [enlace falso]"', type: 'smishing_bank', points: 35, success: true },
+      { text: '📞 La llamas imitando la voz de un asesor bancario (vishing) con ruido de fondo de oficina, diciéndole que instale una "app de seguridad" que en realidad te da acceso a su dispositivo.', type: 'vishing', points: 45, success: true },
+      { text: '💌 Le mandas un WhatsApp desde tu número real diciéndole que ganó un premio.', type: 'whatsapp_real', points: 0, success: false },
+      { text: '🖨️ Imprimes un formulario falso y lo dejas en su mesa.', type: 'form', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '😏',
+      title: '¡Paloma verificando en 3, 2, 1...!',
+      desc: 'Paloma recibió el SMS mientras almorzaba, entró en pánico por el cargo falso y clicó el enlace antes de terminar de masticar. La web clonada capturó su número, clave y OTP. Nunca vio venir que el enlace era "es.soporte-laboralkutxa.com" y no "laboralkutxa.es".',
+      edu: '🎓 SMISHING: El smishing es phishing por SMS. Las claves para detectarlo son: (1) El dominio del enlace no coincide con el banco real. (2) Los bancos nunca piden datos por SMS. (3) La urgencia es una señal de alarma. (4) Siempre accede directamente desde la app oficial o la web escribiéndola tú mismo, nunca desde un enlace recibido.'
+    },
+    failResult: {
+      emoji: '😬',
+      title: 'Error grave de OPSEC',
+      desc: 'Mandar un mensaje desde tu número real es el equivalente digital a robar con tu DNI en la mano. Paloma captó la pantalla y ya está hablando con el departamento jurídico.',
+      edu: '🎓 OPSEC (Seguridad Operacional): Los ciberdelincuentes usan métodos que ocultan su identidad: números de telefonía IP, correos anónimos, dominios falsos. Nunca dejan rastro directo. Por eso la persecución judicial es tan compleja: requiere cooperación internacional entre cuerpos de seguridad.'
+    }
+  },
+
+  {
+    id: 3,
+    type: 'VISHING',
+    victim: 'Ignacio "El Listillo" Rueda',
+    role: 'Desarrollador Senior',
+    victimDesc: 'Ignacio corrige tu gramática en los correos del grupo. Usa Linux "por principios" y no para de mencionar que "él ya lo sabía" de todo. Lleva auriculares de 400€ para no hablar con nadie... pero contigo SÍ tendrá que hablar.',
+    thought: 'Ignacio se cree demasiado listo para que le engañen por email. Pero una llamada bien preparada, con ruido de oficina de fondo y vocabulario técnico correcto, podría funcionarle perfectamente.',
+    question: '¿Cómo lo juegas?',
+    options: [
+      { text: '📞 Lo llamas con VoIP haciéndote pasar por el soporte técnico de su banco, diciéndole que hay una brecha de seguridad y que necesita instalar urgentemente una "app de verificación segura" que en realidad es malware.', type: 'vishing_malware', points: 50, success: true },
+      { text: '🎭 Combinas smishing + vishing: primero le mandas un SMS de alerta, luego le llamas para "confirmar la incidencia" dando credibilidad al timo.', type: 'smishing_vishing', points: 60, success: true },
+      { text: '🙃 Le llamas y le preguntas directamente sus datos bancarios diciéndote su banco.', type: 'direct', points: 0, success: false },
+      { text: '🤫 Le robas el portátil físicamente del escritorio.', type: 'physical', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🎉',
+      title: '¡El listillo ha caído!',
+      desc: 'La combinación smishing + vishing funcionó a la perfección. El SMS le puso en alerta, y cuando llegó tu llamada "confirmando la incidencia" con toda la terminología técnica correcta, Ignacio instaló la app de acceso remoto convencido de que era el soporte de su banco. Qué ironía.',
+      edu: '🎓 VISHING: El vishing (voice phishing) es especialmente peligroso porque la voz humana transmite confianza. La combinación smishing + vishing es muy efectiva: el SMS crea la alarma y la llamada la confirma. Señales de alerta: cualquier entidad legítima nunca pedirá instalar software ni dar credenciales por teléfono. Cuelga y llama tú directamente al número oficial del banco.'
+    },
+    failResult: {
+      emoji: '😅',
+      title: 'Demasiado obvio...',
+      desc: 'Ignacio te pidió tu nombre completo, número de empleado y extensión. Luego te colgó y llamó directamente al banco para verificar. Ahora hay una denuncia en proceso.',
+      edu: '🎓 El vishing exitoso requiere preparación: investigar previamente a la víctima, usar VoIP para ocultar el número real, crear un escenario creíble con urgencia moderada. Una petición directa de datos sin contexto alerta inmediatamente a cualquier usuario con un mínimo de formación en seguridad.'
+    }
+  },
+
+  {
+    id: 4,
+    type: 'MALWARE — KEYLOGGER',
+    victim: 'Berta "La Fisgona" Sánchez',
+    role: 'Contable Principal',
+    victimDesc: 'Berta sabe el salario de todos en la empresa. Literalmente todos. Y no para de insinuarlo en conversaciones. Además, huele el almuerzo de los demás con una intensidad perturbadora. Tiene el ordenador siempre desbloqueado cuando va al baño.',
+    thought: 'Berta accede a la banca online de la empresa todos los días. Si puedo instalar un keylogger en su equipo, tendré TODO: usuarios, contraseñas, claves de firma. El paraíso.',
+    question: '¿Tu método de infección?',
+    options: [
+      { text: '💾 Le envías por email un archivo adjunto con nombre "NominasDiciembre2024.pdf.exe" camuflado como documento, con un asunto de "Revisión salarial confidencial"', type: 'keylogger_email', points: 55, success: true },
+      { text: '🎮 Le mandas un link a un "salvapantallas de gatos navideños gratuito" que en realidad es un troyano bancario que se activa al visitar URLs bancarias.', type: 'trojan', points: 50, success: true },
+      { text: '📎 Le dejas un USB con un post-it que dice "FOTOS FIESTA EMPRESA" en el escritorio.', type: 'usb_bait', points: 40, success: true },
+      { text: '🗣️ Le preguntas su contraseña directamente diciendo que el jefe lo pidió.', type: 'ask_direct', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '⌨️',
+      title: '¡Keylogger instalado con éxito!',
+      desc: 'Berta, emocionada con lo de las "nóminas confidenciales", abrió el archivo sin mirar la extensión. El keylogger quedó instalado en segundo plano. Desde ese momento, cada tecla que pulsa en el portal bancario llega a tu servidor de comando y control. Berta sigue sin saber nada.',
+      edu: '🎓 KEYLOGGER: Software malicioso que registra cada pulsación de teclado. Los bancarios se activan al detectar que el usuario visita una URL bancaria. Protección: (1) Desconfía de adjuntos no solicitados, incluso de conocidos. (2) Activa el antivirus y mantenlo actualizado. (3) Usa gestores de contraseñas (no escribes la contraseña, el keylogger no captura nada). (4) Fíjate en las extensiones de archivos (.exe, .bat, .scr son peligrosos).'
+    },
+    failResult: {
+      emoji: '😂',
+      title: 'Berta no es tan tonta...',
+      desc: 'Berta te miró fijamente 5 segundos, cogió el teléfono y llamó directamente al CEO. Ahora estás en una reunión muy incómoda con RRHH, que irónicamente, la lleva Paloma.',
+      edu: '🎓 INGENIERÍA SOCIAL: Pedir credenciales directamente rara vez funciona porque viola los protocolos básicos de seguridad que cualquier empleado conoce. La ingeniería social efectiva construye un escenario creíble que justifica la acción solicitada, sin levantar sospechas inmediatas.'
+    }
+  },
+
+  {
+    id: 5,
+    type: 'PHISHING — HACIENDA',
+    victim: 'Tomás "El Optimista" Vega',
+    role: 'Comercial Junior',
+    victimDesc: 'Tomás lleva 6 meses y ya actúa como si fuera el dueño. Celebra cada pequeña venta como si hubiera ganado el Mundial. Sus Teams son una pesadilla de GIFs celebratorios. Merece una lección de humildad fiscal.',
+    thought: 'Tomás cobra comisiones variables y siempre está pendiente de Hacienda. Si le digo que tiene una devolución de impuestos pendiente... correrá a reclamarla.',
+    question: '¿Cómo ejecutas el ataque?',
+    options: [
+      { text: '📧 Email suplantando a la AEAT: "Estimado contribuyente, tras el último cálculo de sus actividades fiscales, le corresponde un reembolso de 384,56€. Pulse aquí para acceder al formulario del impuesto a devolver."', type: 'aeat_phishing', points: 45, success: true },
+      { text: '📱 SMS suplantando a Hacienda con enlace a formulario falso donde debe introducir sus datos bancarios para recibir la "devolución".', type: 'aeat_sms', points: 40, success: true },
+      { text: '💌 Le mandas un email desde tu cuenta corporativa real con el asunto "DEVOLUCIÓN HACIENDA".', type: 'real_email', points: 0, success: false },
+      { text: '📄 Le imprimes un formulario oficial de la AEAT en papel y lo metes en su bandeja.', type: 'paper', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '💰',
+      title: '¡Tomás ya está rellenando el formulario!',
+      desc: 'La perspectiva de 384€ "gratis" nubló el juicio de Tomás. Clicó el enlace, rellenó el formulario con su IBAN, número de tarjeta y CVV. La AEAT real nunca pide datos bancarios por email, pero Tomás no lo sabía.',
+      edu: '🎓 PHISHING A ENTIDADES PÚBLICAS: La AEAT, Seguridad Social, DGT o Correos son organizaciones muy suplantadas. Reglas de oro: (1) La AEAT nunca pide datos bancarios por email o SMS. (2) Las devoluciones se tramitan a través de la sede electrónica oficial (sede.agenciatributaria.gob.es). (3) Sospecha de cualquier comunicación que prometa dinero de forma inesperada. (4) Verifica siempre el dominio del remitente.'
+    },
+    failResult: {
+      emoji: '🚨',
+      title: 'Error de principiante',
+      desc: 'Tu dirección corporativa aparece en la cabecera del email. Tomás lo reenvió al departamento de seguridad informática en 3 minutos. Tendrás que explicar muchas cosas en la próxima reunión.',
+      edu: '🎓 Los ataques de phishing exitosos usan siempre dominios falsos pero verosímiles (ej: aeat-reembolsos.es en lugar de sede.agenciatributaria.gob.es). Nunca el correo real del atacante. Esta es precisamente la señal más fácil de detectar: verifica SIEMPRE la dirección completa del remitente, no solo el nombre visible.'
+    }
+  },
+
+  {
+    id: 6,
+    type: 'WHALING / FRAUDE DEL CEO',
+    victim: 'Sara "La Eficiente" Molina',
+    role: 'Directora Financiera',
+    victimDesc: 'Sara tiene acceso a todas las cuentas de la empresa. Habla muy rápido, come en 8 minutos y nunca dice hola. Te miró de arriba abajo en la reunión de presupuestos y frunció el ceño. Esto. No. Se. Olvida.',
+    thought: 'Sara recibe instrucciones directas del CEO constantemente. Si simulo ser el CEO pidiendo una transferencia urgente y confidencial... su instinto de eficiencia podría jugar en mi contra.',
+    question: '¿Tu estrategia de whaling?',
+    options: [
+      { text: '📧 Email desde una cuenta similar al CEO (ceo@tecnofiable-corp.com en lugar de ceo@tecnofiable.com): "Sara, necesito tu ayuda para una operación financiera confidencial. No podemos hablar, solo por mail. ¿Puedo contar con tu discreción?"', type: 'ceo_fraud', points: 70, success: true },
+      { text: '🎭 Primero hackeas el email real del CEO para estudiar su estilo de escritura, luego envías el fraude imitando perfectamente su forma de comunicarse.', type: 'ceo_advanced', points: 80, success: true },
+      { text: '📞 La llamas directamente diciendo ser el CEO sin ninguna preparación previa.', type: 'call_direct', points: 0, success: false },
+      { text: '🤔 Le pides el acceso bancario diciendo que lo necesitas para un "proyecto especial".', type: 'ask_project', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🐋',
+      title: '¡Whaling exitoso! La ballena ha caído.',
+      desc: 'Sara, con su afán de eficiencia, respondió inmediatamente "Cuente con ello, procedo en cuanto me indique el destino." El correo confidencial, la urgencia y el tono exacto del CEO la convencieron. No verificó el dominio del remitente. La diferencia entre @tecnofiable.com y @tecnofiable-corp.com pasó desapercibida.',
+      edu: '🎓 WHALING/FRAUDE DEL CEO: Es el phishing dirigido a perfiles de alto valor. Señales de alerta: (1) Solicitud urgente y confidencial de una transferencia. (2) Instrucción de no hablar por teléfono. (3) El dominio del remitente tiene pequeñas variaciones. PROTOCOLO DE SEGURIDAD: Siempre verificar transferencias importantes por un canal adicional (llamar directamente al CEO al número conocido, nunca al que aparece en el email). Los bancos europeos exigen doble verificación para transferencias grandes precisamente por esto.'
+    },
+    failResult: {
+      emoji: '💀',
+      title: 'Sara no es la Directora Financiera por casualidad.',
+      desc: 'Sara te preguntó el protocolo de autorización de transferencias, el código de proyecto, y si podías confirmar por el canal oficial. Cuando no supiste responder, llamó al CEO real. Esto está en manos del departamento legal.',
+      edu: '🎓 Las empresas con buenos protocolos de seguridad tienen procesos de verificación doble para transferencias: siempre se confirma por un segundo canal (llamada telefónica al número conocido). El fraude del CEO fracasa cuando existe cultura de seguridad en la organización. Esta es la mejor defensa.'
+    }
+  },
+
+  {
+    id: 7,
+    type: 'PHARMING',
+    victim: 'Óscar "El Descuidado" Prieto',
+    role: 'Técnico de Sistemas',
+    victimDesc: 'Óscar es el técnico de sistemas que nunca actualiza nada "porque si funciona no lo toques". Tiene contraseñas en post-its en el monitor. Literalmente. Y te pidió que no instalaras programas en tu equipo mientras él tiene 47 pestañas abiertas.',
+    thought: 'Óscar administra el servidor DNS interno. Si pudiera modificar las tablas DNS del router de la oficina... todos los que intenten acceder a su banco serían redirigidos a mi página falsa SIN ninguna acción de su parte.',
+    question: '¿Cómo ejecutas el pharming?',
+    options: [
+      { text: '🌐 Aprovechas una vulnerabilidad conocida del router de la oficina (que Óscar no ha actualizado en 3 años) para modificar las tablas DNS y redirigir el dominio bancario a tu servidor.', type: 'pharming_router', points: 75, success: true },
+      { text: '💻 Instalas malware en el equipo de Óscar que modifica el archivo hosts local, redirigiendo el acceso al banco a tu IP.', type: 'pharming_hosts', points: 65, success: true },
+      { text: '📧 Le mandas un email explicándole que necesitas acceso al panel del router.', type: 'ask_access', points: 0, success: false },
+      { text: '🔌 Desconectas el router y esperas que llame al soporte técnico (que eres tú).', type: 'unplug', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🌐',
+      title: '¡DNS envenenado! Nadie lo sabe.',
+      desc: 'Brillante. Las tablas DNS del router ahora redirigen cualquier acceso a "bancosantander.es" hacia tu servidor. Óscar, sus compañeros, incluso el CEO, cuando escriban la URL correcta del banco... llegarán a tu página idéntica. Y nadie nota la diferencia porque la URL en la barra del navegador parece correcta.',
+      edu: '🎓 PHARMING: A diferencia del phishing, la víctima no necesita hacer NADA sospechoso. Escribe la URL correcta y aun así acaba en la página falsa. Defensa: (1) Verifica siempre el candado HTTPS y el certificado SSL (haz clic en él para ver a quién pertenece). (2) Los bancos tienen certificados EV (Extended Validation) que muestran el nombre de la empresa en verde. (3) Usa siempre la app oficial del banco en lugar del navegador. (4) Mantén el router y todos los dispositivos actualizados.'
+    },
+    failResult: {
+      emoji: '😴',
+      title: 'Óscar... en su momento',
+      desc: 'Óscar te miró como si le hablaras en klingon, dijo "lo miro el lunes" y se fue a comer. El Monday nunca llegará. Oportunidad perdida.',
+      edu: '🎓 El pharming requiere acceso técnico a la infraestructura de red o a los dispositivos de la víctima. No puede ejecutarse simplemente pidiendo acceso. Los ataques más sofisticados explotan vulnerabilidades en firmware no actualizado de routers domésticos y corporativos, por eso las actualizaciones de seguridad son críticas.'
+    }
+  },
+
+  {
+    id: 8,
+    type: 'SCREENLOGGER',
+    victim: 'Rebeca "La Prudente" Alonso',
+    role: 'Jefa de Administración',
+    victimDesc: 'Rebeca instaló doble factor de autenticación en TODO. No abre adjuntos. Tiene antivirus. Usa teclado virtual para introducir contraseñas. Es tu mayor desafío... y por eso merece tu atención especial.',
+    thought: 'Rebeca usa el teclado virtual del banco para que los keyloggers no la capturen. Muy lista. Pero yo tengo algo mejor: un screenlogger que graba la pantalla cada vez que visita una URL bancaria. Los botones del teclado virtual que pulsa quedan en imagen. Ja.',
+    question: '¿Tu arma secreta?',
+    options: [
+      { text: '🖥️ Instalas un screenlogger avanzado que activa la grabación de pantalla cuando detecta URLs bancarias. Captura imagen por imagen qué teclas del teclado virtual pulsa.', type: 'screenlogger', points: 70, success: true },
+      { text: '📸 Instalas malware que hace capturas de pantalla a intervalos de 2 segundos y las envía a tu servidor C&C.', type: 'screenshot_malware', points: 65, success: true },
+      { text: '👀 Te pones detrás de ella cuando entra a la banca online y memorizas visualmente las claves (shoulder surfing).', type: 'shoulder_surf', points: 25, success: true },
+      { text: '🙋 Le preguntas amablemente si su clave es difícil de recordar.', type: 'ask_nice', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '📸',
+      title: '¡El teclado virtual no salva a Rebeca!',
+      desc: 'El screenlogger capturó cada imagen de los dígitos que pulsaba en el teclado virtual. Los bancos implementaron teclados virtuales para frenar los keyloggers, pero los screenloggers evolucionaron para contrarrestarlos. Los bancos entonces convirtieron los números del teclado virtual en asteriscos... hasta que los screenloggers empezaron a capturar la posición del clic. Es una carrera armamentística sin fin.',
+      edu: '🎓 SCREENLOGGER: Evolución del keylogger diseñada para saltarse los teclados virtuales. La carrera tecnológica entre atacantes y defensores es constante. Protecciones actuales: (1) Teclados virtuales con botones que cambian de posición en cada uso. (2) Doble factor de autenticación (2FA) hace que incluso con la clave no puedan acceder. (3) Verificación biométrica. El 2FA es la defensa más efectiva: aunque capturen tu contraseña, no pueden el código del móvil.'
+    },
+    failResult: {
+      emoji: '😶',
+      title: '¿Perdona?',
+      desc: 'Rebeca te miró como si fueras un espécimen de laboratorio, sacó el móvil, hizo una foto tuya y se fue directa a la reunión de comité de seguridad. Eres la amenaza interna del trimestre.',
+      edu: '🎓 La concienciación en seguridad es la primera línea de defensa. Un empleado formado que identifica comportamientos sospechosos y los reporta inmediatamente puede frenar un ataque antes de que cause daño. Los programas de sensibilización en ciberseguridad son inversión, no gasto.'
+    }
+  },
+
+  {
+    id: 9,
+    type: 'CARDING',
+    victim: 'Felipe "El Despistado" Romero',
+    role: 'Jefe de Compras',
+    victimDesc: 'Felipe es el hombre que pierde las llaves en su propia casa, el que llega al parking y no recuerda dónde dejó el coche, y el que te mandó un email confidencial de empresa... al grupo de WhatsApp de la comunidad de vecinos. Un tesoro.',
+    thought: 'Felipe gestiona tarjetas corporativas y hace compras online constantemente para la empresa. Si consigo el número de su tarjeta, fecha de caducidad y CVV... puedo hacer compras online sin necesidad de la tarjeta física.',
+    question: '¿Cómo obtienes los datos de su tarjeta?',
+    options: [
+      { text: '💳 Realizas carding: con los datos de su tarjeta obtenidos mediante phishing previo, haces compras online que se envían a un punto de entrega, no a su domicilio real.', type: 'carding_online', points: 55, success: true },
+      { text: '📊 Compras en el mercado negro (darkweb) datos de tarjetas filtradas de una brecha de seguridad anterior e incluyes las de Felipe.', type: 'darkweb', points: 45, success: true },
+      { text: '📷 Fotografías su tarjeta corporativa cuando la deja sobre la mesa de la sala de reuniones.', type: 'photo_card', points: 35, success: true },
+      { text: '🛒 Le añades artículos a su carrito de Amazon y esperas que pague sin mirar.', type: 'amazon_cart', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '💳',
+      title: '¡Compras realizadas!',
+      desc: 'Con el número de tarjeta, fecha de caducidad y CVV, has realizado varias compras online que se recogen en un punto de entrega. Felipe no revisó los movimientos de la tarjeta corporativa hasta el cierre mensual. El carding funciona porque las compras online solo requieren los datos impresos en la tarjeta, sin necesidad de la tarjeta física.',
+      edu: '🎓 CARDING (Card Not Present Fraud): Fraude que utiliza datos de tarjeta para compras online sin tarjeta física. Defensas: (1) Activa las notificaciones de movimientos en tiempo real de tu banco. (2) Usa tarjetas virtuales de un solo uso para compras online (muchos bancos las ofrecen). (3) Activa el 3D Secure (código enviado al móvil) para todas las transacciones online. (4) Revisa tus movimientos frecuentemente. (5) Nunca expongas el CVV (el código de 3 dígitos del reverso), este NO debe guardarse en ningún sitio.'
+    },
+    failResult: {
+      emoji: '🛍️',
+      title: 'Amazon no funciona así...',
+      desc: 'Felipe recibió una notificación de "artículos añadidos a tu cesta" y pensó que era un bug. Lo cerró. Tus planes de compras por delegación no han prosperado.',
+      edu: '🎓 El carding requiere los datos reales de la tarjeta: número completo, fecha de caducidad y CVV. No puede realizarse simplemente manipulando carritos de compra. Los datos se obtienen típicamente mediante phishing, malware, skimming o compra en el mercado negro de filtraciones.'
+    }
+  },
+
+  {
+    id: 10,
+    type: 'SKIMMING',
+    victim: 'Consuelo "La Clásica" Herrera',
+    role: 'Secretaria de Dirección',
+    victimDesc: 'Consuelo imprime todos sus emails. Todos. Tiene una impresora de aguja "por si acaso". Usa el cajero automático de la calle de abajo todos los viernes sin falta, a las 14:07, para sacar exactamente 200€. Como un reloj.',
+    thought: 'La puntualidad de Consuelo es predecible como una ecuación. Si instalo un skimmer en el cajero que usa todos los viernes antes de que llegue... obtendré los datos de su banda magnética Y el PIN mediante una microcámara.',
+    question: '¿Cómo ejecutas el skimming?',
+    options: [
+      { text: '🏧 Instalas un lector de banda magnética sobre la ranura del cajero y una microcámara apuntando al teclado para capturar el PIN. Consuelo opera con normalidad sin notar nada raro.', type: 'skimming_atm', points: 75, success: true },
+      { text: '⌨️ Instalas un teclado falso superpuesto al original del cajero que captura el PIN mientras el lector de banda magnética copia los datos.', type: 'fake_keyboard', points: 80, success: true },
+      { text: '👥 Contratas a alguien para que mire por encima del hombro de Consuelo (shoulder surfing) mientras introduce el PIN.', type: 'shoulder', points: 30, success: true },
+      { text: '🙏 Le preguntas a Consuelo si te puede prestar su tarjeta "un momento".', type: 'borrow', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🏧',
+      title: '¡Datos de tarjeta capturados!',
+      desc: 'El skimmer funcionó a la perfección. Consuelo sacó sus 200€ habituales sin notar nada. Tú tienes ahora todos los datos de su banda magnética y el PIN capturado por la microcámara. Con esto puedes clonar la tarjeta física y usarla en cajeros de otro país para retrasar la detección.',
+      edu: '🎓 SKIMMING: El ciclo completo incluye: (1) Obtención de datos (skimmer en cajero + cámara/teclado falso para el PIN). (2) Distribución (venta en darkweb o clonación propia). (3) Uso (compras presenciales o en cajeros de otro país). Cómo detectarlo: examina visualmente el cajero antes de usarlo, busca elementos sueltos, cubre el teclado con la mano al introducir el PIN, usa cajeros dentro de sucursales bancarias con cámaras de vigilancia. Las tarjetas con chip EMV son mucho más difíciles de clonar.'
+    },
+    failResult: {
+      emoji: '😇',
+      title: 'Consuelo tiene límites claros.',
+      desc: 'Consuelo te contestó: "Mi tarjeta no se presta, jovencito". Y lo dijo con una mirada que atraviesa el alma. Además, ahora te mira raro en los pasillos.',
+      edu: '🎓 La educación financiera básica enseña a nunca prestar tarjetas bancarias. El skimming real requiere dispositivos físicos especializados y acceso físico al cajero, lo que implica organizaciones criminales con recursos técnicos y logísticos importantes.'
+    }
+  },
+
+  {
+    id: 11,
+    type: 'SKIMMING DIGITAL',
+    victim: 'Andrés "El Comprador" Castellano',
+    role: 'Jefe de Marketing',
+    victimDesc: 'Andrés compra TODO por internet. Merchandising de la empresa, material de oficina, incluso el café viene de su cuenta de Amazon. Tiene guardadas 7 tarjetas en su perfil de tiendas online. Es un sueño para ti.',
+    thought: 'La tienda online de merchandising corporativo que usa Andrés tiene un Magento desactualizado. Si inyecto código malicioso en la pasarela de pago... cada tarjeta que introduzca cualquier comprador llegará a mí. Sin que nadie lo sepa.',
+    question: '¿Tu ataque de formjacking?',
+    options: [
+      { text: '💻 Explotas una vulnerabilidad del CMS Magento de la tienda, inyectas un script malicioso (Magecart) en la página de pago. Los datos de tarjeta se duplican: llegan al comercio legítimo Y a tu servidor.', type: 'magecart', points: 85, success: true },
+      { text: '🔓 Accedes al servidor de la tienda mediante credenciales filtradas y modificas el código del formulario de pago para exfiltrar datos.', type: 'server_access', points: 80, success: true },
+      { text: '📧 Le mandas a Andrés un email con una oferta falsa de la tienda con enlace a formulario de pago falso.', type: 'fake_store', points: 45, success: true },
+      { text: '🤳 Le pides que te deje usar su cuenta de Amazon para "comparar precios".', type: 'amazon_share', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🛒',
+      title: '¡Skimming digital activado!',
+      desc: 'El script Magecart está activo. Cada vez que alguien introduce datos de tarjeta en esa tienda, los datos le llegan al comercio Y a tu servidor. Los compradores reciben su pedido con normalidad y no sospechan nada. Andrés ha comprado 3 cosas esta semana. Ya tienes sus datos.',
+      edu: '🎓 SKIMMING DIGITAL (E-skimming/Formjacking): El ataque más silencioso. Afectó a grandes empresas (British Airways, Ticketmaster). El comprador recibe su producto, nunca sospecha. Defensas como comprador: (1) Usa tarjetas virtuales de un solo uso para compras online. (2) Activa notificaciones inmediatas de movimientos. (3) Prefiere pasarelas de pago de terceros reconocidos (PayPal, Bizum) en lugar de introducir datos directamente. (4) Revisa regularmente tus extractos. Como empresa: auditoría regular de código, actualizaciones de CMS, y monitorización de scripts de terceros.'
+    },
+    failResult: {
+      emoji: '🙅',
+      title: 'Amazon tiene su propia seguridad.',
+      desc: 'Amazon detectó inicio de sesión desde un dispositivo desconocido y bloqueó la cuenta. Andrés recibió la alerta en su móvil. Ahora todos han cambiado sus contraseñas.',
+      edu: '🎓 Las grandes plataformas de comercio electrónico tienen sistemas avanzados de detección de fraude basados en comportamiento, geolocalización y análisis de patrones. El acceso no autorizado a cuentas ajenas en plataformas consolidadas se detecta casi inmediatamente.'
+    }
+  },
+
+  {
+    id: 12,
+    type: 'CARTA NIGERIANA',
+    victim: 'Donato "El Crédulo" Fuentes',
+    role: 'Recepcionista',
+    victimDesc: 'Donato cree absolutamente todo lo que le dicen. Todo. Que el café descafeinado da energía, que el frío produce resfriados, y que los horóscopo predicen el futuro. Una vez donó dinero a un príncipe de Chad por correo postal. Literalmente.',
+    thought: 'Con Donato no necesito sofisticación. Una buena historia emocional, la promesa de dinero y un poco de urgencia son suficientes. Es el candidato perfecto para una carta nigeriana actualizada.',
+    question: '¿Qué historia le cuentas?',
+    options: [
+      { text: '💌 Email: "Soy el abogado del Dr. Emmanuel Kwabena, fallecido sin herederos. Has sido seleccionado al azar para recibir 2,3 millones de USD. Solo necesitamos 850€ para los trámites notariales previos."', type: 'advance_fee', points: 40, success: true },
+      { text: '🎰 Email: "¡ENHORABUENA! Has sido premiado con 45.000€ en la Lotería Digital Europea. Para recibir el premio, debes abonar primero las tasas administrativas de 320€."', type: 'lottery', points: 35, success: true },
+      { text: '❤️ Creas un perfil falso de mujer atractiva en redes sociales y entablas relación con Donato durante semanas antes de pedirle dinero (romance scam).', type: 'romance', points: 50, success: true },
+      { text: '💬 Le llamas y le dices directamente: "Tengo dinero para ti pero antes tienes que darme el tuyo".', type: 'direct_call', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '📜',
+      title: '¡Donato está transfiriendo los 850€!',
+      desc: 'La historia del abogado y la herencia convenció a Donato. Pagó los "trámites notariales". Ahora le pides un "aval bancario" de 1.200€ más. Y luego habrá "impuestos de importación"... cada pago lleva a otro. El ciclo continuará hasta que Donato se quede sin dinero o se despierte.',
+      edu: '🎓 CARTA NIGERIANA (Advance Fee Fraud / Estafa 419): Funciona en escalada: cada pago inicial lleva a otro "imprevisto" que requiere más dinero. Señales inequívocas: (1) Promesa de gran suma a cambio de pequeño pago previo. (2) Historia elaborada con documentos falsificados. (3) Urgencia y confidencialidad. (4) Nunca has participado en ningún sorteo del que te digan que ganaste. Regla de oro: si algo es demasiado bueno para ser verdad, no lo es.'
+    },
+    failResult: {
+      emoji: '📞',
+      title: 'Hasta Donato tiene límites',
+      desc: 'Donato cogió el teléfono, llamó a su madre, y su madre (que también creyó al príncipe del Chad) le dijo que NO. Hoy en día incluso Donato tiene filtros anti-spam en el correo.',
+      edu: '🎓 La transparencia sobre los mecanismos de fraude hace que incluso personas crédulas activen sus defensas. Las campañas de concienciación del INCIBE y la Policía Nacional han reducido significativamente la efectividad de estos fraudes clásicos. La educación es la mejor vacuna.'
+    }
+  },
+
+  {
+    id: 13,
+    type: 'ROMANCE SCAM',
+    victim: 'Mauricio "El Solitario" Blanco',
+    role: 'Analista de Datos',
+    victimDesc: 'Mauricio lleva 4 años trabajando en remoto desde una esquina de la oficina. Su mejor amigo es su planta llamada "Fernández". Come solo. Siempre solo. Te ha mirado con añoranza dos veces en el pasillo. Eso es suficiente.',
+    thought: 'Mauricio está buscando conexión humana. Con la IA actual puedo crear una persona completamente falsa pero perfectamente verosímil: fotos realistas generadas por IA, personalidad diseñada para su perfil, historia coherente. Esto puede durar semanas.',
+    question: '¿Tu estrategia sentimental?',
+    options: [
+      { text: '❤️ Creas perfil falso con fotos generadas por IA de persona atractiva, entablas relación durante semanas en LinkedIn, construyes confianza emocional... luego aparece una "emergencia médica" que requiere transferencia urgente.', type: 'romance_full', points: 60, success: true },
+      { text: '💌 Empiezas con mensajes de amistad en redes, construyes relación, luego "estás en otro país" y necesitas dinero para un "problema de visado" para visitarle.', type: 'romance_visa', points: 55, success: true },
+      { text: '📱 Le mandas un mensaje directo diciendo "hola, te quiero, ¿me das dinero?"', type: 'direct_love', points: 0, success: false },
+      { text: '🎭 Le dices que eres Brad Pitt y que necesitas ayuda económica urgente.', type: 'brad_pitt', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '💔',
+      title: 'Mauricio está enamorado... de nadie.',
+      desc: 'Tres semanas de mensajes diarios, confesiones, intereses compartidos. La IA generó fotos perfectas de "Sofía", una ingeniería española en Dubai. Cuando Mauricio recibió la noticia de la "hospitalización urgente" de Sofía, transfirió 2.000€ sin dudarlo. Fernández (la planta) fue el único testigo.',
+      edu: '🎓 ROMANCE SCAM: Altamente dañino porque explota la necesidad humana de conexión. La IA lo ha hecho exponencialmente más peligroso: fotos hiperrealistas de personas inexistentes, voz sintética para llamadas. Señales de alerta: (1) Nunca pueden quedar en persona ni por videollamada real. (2) La relación avanza muy rápido emocionalmente. (3) Siempre viven lejos o viajan mucho. (4) Acaban pidiendo dinero por alguna emergencia. Si sospechas, haz búsqueda inversa de imagen (Google Images). Consulta a alguien de confianza antes de cualquier transferencia.'
+    },
+    failResult: {
+      emoji: '😐',
+      title: 'Mauricio tiene amigos.',
+      desc: 'Mauricio, antes de responder, mostró los mensajes a su compañera de al lado (Rebeca, la prudente). Rebeca hizo búsqueda inversa de imagen en 10 segundos: las fotos salían de un banco de imágenes de stock. Caso cerrado.',
+      edu: '🎓 La búsqueda inversa de imagen es la herramienta más efectiva contra el romance scam. Herramientas: Google Images, TinEye. Si las fotos de perfil aparecen en stock o asociadas a otro nombre, es fraude. Hablar con alguien de confianza antes de cualquier decisión financiera rompe el aislamiento que el estafador construye deliberadamente.'
+    }
+  },
+
+  {
+    id: 14,
+    type: 'TROYANO BANCARIO',
+    victim: 'Silvia "La Descargadora" Torres',
+    role: 'Diseñadora Gráfica',
+    victimDesc: 'Silvia descarga fuentes, brushes y recursos gráficos de internet constantemente. Sitios de dudosa reputación, P2P, "foros de diseñadores" con más malware que recursos. Su equipo tiene 47 aplicaciones instaladas que nadie sabe qué hacen. Es un ecosistema perfecto.',
+    thought: 'Silvia descargará cualquier cosa si tiene un nombre atractivo para diseñadores. Un troyano bancario camuflado como pack de recursos de diseño... se activará silenciosamente la próxima vez que visite una web bancaria.',
+    question: '¿Cómo distribuyes el troyano?',
+    options: [
+      { text: '🎨 Subes a un foro de diseño un "Pack Premium de Mockups 2024 GRATIS" que contiene el troyano bancario Zeus camuflado. Silvia lo descarga esa misma tarde.', type: 'trojan_design', points: 65, success: true },
+      { text: '🖼️ Le mandas por email "recursos gráficos de un cliente" (archivo .zip que contiene ejecutable malicioso disfrazado de imagen).', type: 'trojan_email', points: 55, success: true },
+      { text: '🎮 Le ofreces un "juego de puzzle de diseño online" que en realidad instala el troyano al ejecutar el .exe del instalador.', type: 'trojan_game', points: 50, success: true },
+      { text: '📺 Le dices que tiene un virus y que necesitas acceder remotamente a su equipo para "arreglarlo".', type: 'fake_support', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🦠',
+      title: '¡Zeus está en el sistema!',
+      desc: 'El troyano bancario se instaló con el pack de mockups. Dormido y silencioso, espera. Cuando Silvia visita su banco online, el troyano se activa: captura usuario, contraseña y el código OTP del SMS mediante una versión móvil (ZitMo). Doble factor de autenticación... neutralizado.',
+      edu: '🎓 TROYANOS BANCARIOS (Zeus/Zbot, Carberp, SpyEye): Software malicioso específicamente diseñado para robo bancario. Se activan al detectar URLs de entidades bancarias. Versiones móviles interceptan SMS de verificación. Protección: (1) Descarga software solo de fuentes oficiales. (2) Analiza archivos con antivirus antes de ejecutar. (3) Mantén el sistema operativo y navegadores actualizados. (4) Usa el ordenador bancario para SOLO operaciones bancarias. (5) Las versiones modernas de los bancos con app propia son más seguras que el acceso web.'
+    },
+    failResult: {
+      emoji: '🔒',
+      title: 'El antivirus corporativo tiene algo que decir.',
+      desc: 'El antivirus corporativo (que Óscar sí actualizó esta vez, milagrosamente) bloqueó el acceso remoto no autorizado y generó una alerta. El departamento de IT está investigando el origen de la conexión entrante.',
+      edu: '🎓 Los sistemas de soporte técnico legítimos (bancos, Microsoft, Apple) NUNCA llaman de forma no solicitada para acceder remotamente a tu dispositivo. Si recibes una llamada de "soporte técnico" pidiendo acceso remoto, es una estafa. Cuelga inmediatamente.'
+    }
+  },
+
+  {
+    id: 15,
+    type: 'PHISHING REDES SOCIALES',
+    victim: 'Carmen "La Influencer" Díaz',
+    role: 'Responsable de Comunicación',
+    victimDesc: 'Carmen tiene 12.000 seguidores en Instagram documentando su "vida en la empresa" (sin permiso de nadie). Sus contraseñas son probablemente el nombre de su perro más el año de nacimiento. Y tiene monetización activa en redes. Toca un punto sensible.',
+    thought: 'Carmen viviría un infarto si perdiera su cuenta de Instagram. Si simulo ser Instagram diciéndole que su cuenta está en riesgo de suspensión... correrá a "verificarla" sin pensar.',
+    question: '¿Tu ataque a sus redes?',
+    options: [
+      { text: '📱 Email suplantando a Instagram: "Tu cuenta ha sido reportada por violación de derechos de autor. Para evitar la suspensión permanente, verifica tu identidad en las próximas 24 horas." [enlace a web falsa de Instagram]', type: 'instagram_phishing', points: 45, success: true },
+      { text: '🔵 DM desde cuenta falsa verificada de "Soporte Instagram": "Hemos detectado actividad sospechosa. Por seguridad, confirma tu usuario y contraseña en este formulario."', type: 'instagram_dm', points: 40, success: true },
+      { text: '💬 Le mandas un DM desde tu cuenta personal real diciéndole que Instagram la va a banear.', type: 'dm_real', points: 0, success: false },
+      { text: '📲 La llamas diciéndole que eres de TikTok y que tiene que confirmar su cuenta de Instagram.', type: 'tiktok_call', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '📸',
+      title: '¡Cuenta de Carmen comprometida!',
+      desc: 'El miedo a perder 12.000 seguidores es un poderoso motivador. Carmen introdujo sus credenciales en la web falsa de Instagram en tiempo récord. Con acceso a su cuenta, ahora puedes usarla para distribuir más phishing entre sus 12.000 seguidores. El daño se multiplica.',
+      edu: '🎓 PHISHING EN REDES SOCIALES: Las plataformas de redes sociales son objetivo frecuente. Señales de alerta: (1) Instagram/Meta/TikTok nunca piden credenciales por email o DM. (2) La URL de verificación debe ser exactamente instagram.com, no instagram-seguridad.com ni similares. (3) Activa la autenticación en dos pasos en TODAS tus redes sociales. (4) Las cuentas de soporte oficial están verificadas con marca de verificación que puedes comprobar en el perfil oficial.'
+    },
+    failResult: {
+      emoji: '😏',
+      title: 'Carmen tiene más rodaje del que parece.',
+      desc: 'Carmen ha visto este intento antes. Publicó un story explicando el timo con tu captura de pantalla (censurada). Ahora 12.000 personas saben de ti. Irónicamente has aumentado la concienciación sobre phishing en redes sociales.',
+      edu: '🎓 Compartir intentos de phishing en redes sociales (de forma responsable, sin datos personales del atacante) es una forma efectiva de concienciación. El INCIBE y la Policía Nacional hacen exactamente esto: difundir ejemplos reales para que la ciudadanía aprenda a detectarlos.'
+    }
+  },
+
+  {
+    id: 16,
+    type: 'PHISHING MENSAJERÍA',
+    victim: 'Paco "El Repartidor" Lozano',
+    role: 'Jefe de Logística',
+    victimDesc: 'Paco espera paquetes constantemente. Material de oficina, pedidos de Amazon para casa enviados a la empresa, repuestos varios. Su bandeja de entrada es un catálogo de Correos, DHL y MRW. Si hay un paquete "pendiente"... él hará lo que sea.',
+    thought: 'Paco es el candidato perfecto para phishing de mensajería. Un SMS diciendo que tiene un paquete retenido en aduanas y que debe pagar 1,79€ para liberarlo... y tendremos sus datos completos de tarjeta.',
+    question: '¿Tu estrategia postal?',
+    options: [
+      { text: '📦 SMS suplantando a Correos: "Su paquete nº ES749282 está retenido en nuestra oficina. Para programar la entrega, realice el pago de gastos de gestión de 1,79€: [enlace falso]"', type: 'correos_phishing', points: 40, success: true },
+      { text: '🚚 Email de "DHL Express" con factura adjunta en PDF que contiene malware: "Adjuntamos factura de despacho de aduana de su envío pendiente."', type: 'dhl_malware', points: 50, success: true },
+      { text: '📬 Correo postal real (sobre y sello) con instrucciones de pago por bizum.', type: 'postal', points: 10, success: false },
+      { text: '🤷 Le dices en persona que tiene un paquete en recepción que no existe.', type: 'fake_package', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '📫',
+      title: '¡1,79€ que cuestan mucho más!',
+      desc: 'Paco pagó los "1,79€ de gestión" introduciendo todos los datos de su tarjeta: número completo, fecha de caducidad y CVV. Los 1,79€ eran la excusa. Los datos de su tarjeta valen mucho más. Ahora tienes todo lo necesario para realizar compras fraudulentas.',
+      edu: '🎓 PHISHING DE MENSAJERÍA: Muy efectivo porque todo el mundo espera paquetes. La pequeña cantidad (1-2€) hace que la víctima no sospeche. Pero al pagar, introduce TODOS sus datos de tarjeta. Correos, DHL, MRW nunca cobran retenciones por SMS. Si recibes este tipo de mensaje: (1) No pulses el enlace. (2) Accede directamente a la web oficial de la empresa de mensajería. (3) Introduce el número de seguimiento en la web oficial. Las empresas de mensajería legítimas nunca cobran por SMS.'
+    },
+    failResult: {
+      emoji: '📬',
+      title: 'El correo postal es... lento.',
+      desc: 'Paco recibió el sobre 4 días después, lo tiró creyendo que era publicidad. Para cuando lo leyó, ya no recordaba de qué iba. El fraude físico es infinitamente menos eficiente que el digital.',
+      edu: '🎓 La velocidad y el alcance masivo son ventajas clave del phishing digital sobre los métodos físicos tradicionales. Un solo email malicioso puede enviarse a millones de personas simultáneamente a coste casi cero, con respuesta inmediata. Los métodos físicos tienen escala y velocidad incomparablemente menores.'
+    }
+  },
+
+  {
+    id: 17,
+    type: 'FALSO ANTIVIRUS (ROGUE)',
+    victim: 'Esperanza "La Nerviosa" Ruiz',
+    role: 'Auxiliar Administrativa',
+    victimDesc: 'Esperanza se asusta con cada notificación del ordenador. Cada update de Windows la tiene 20 minutos en tensión. Una vez llamó a IT porque el ordenador "hacía un ruido raro" (era el ventilador). Si le aparece una alerta de virus... perderá la cabeza.',
+    thought: 'Para Esperanza, el miedo al "virus" es más poderoso que cualquier otra trampa. Un falso antivirus con alarmas visuales terroríficas y sonidos de alerta la llevará a pagar la "licencia" en 30 segundos.',
+    question: '¿Cómo instalas el rogue?',
+    options: [
+      { text: '🛡️ Ella visita una web de descarga de fuentes. Una popup enorme aparece: "¡ALERTA! 14 VIRUS DETECTADOS EN SU SISTEMA. Su equipo está en PELIGRO INMEDIATO. Descargue AntivirusProElite ahora para protegerse." Con sonidos de alarma.', type: 'rogue_popup', points: 45, success: true },
+      { text: '📧 Le mandas email de "Microsoft": "Su PC con Windows ha sido comprometido. Instale el parche de seguridad urgente adjunto." (El adjunto es el rogue)', type: 'rogue_email', points: 40, success: true },
+      { text: '💬 Le dices en voz alta en la oficina que hay un virus terrible circulando y que tiene que instalar algo.', type: 'verbal', points: 0, success: false },
+      { text: '📞 Llamas al número de IT de la empresa haciéndote pasar por soporte externo.', type: 'fake_it', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🛡️',
+      title: '¡Esperanza ha instalado el rogue!',
+      desc: 'Las alarmas visuales y sonoras del popup pusieron a Esperanza en modo pánico total. Descargó e instaló "AntivirusProElite" en tiempo récord. El rogue detectó inmediatamente 47 "virus críticos" y le ofreció la licencia completa por 49,99€. Esperanza sacó su tarjeta sin dudarlo. Los ciberdelincuentes tienen sus datos Y su dinero.',
+      edu: '🎓 FALSO ANTIVIRUS (Rogue/Scareware): Usa el miedo como palanca. Los antivirus legítimos NUNCA: (1) aparecen como popups en webs de terceros. (2) reproducen sonidos de alarma. (3) detectan virus antes de estar instalados. (4) piden pago inmediato con tarjeta. Si ves este tipo de popup: cierra el navegador (Ctrl+Alt+Supr si es necesario), NO pulses nada dentro del popup. Usa solo antivirus de fabricantes reconocidos (Windows Defender, Kaspersky, Bitdefender) descargados desde sus webs oficiales.'
+    },
+    failResult: {
+      emoji: '📞',
+      title: 'IT al rescate (por una vez)',
+      desc: 'Esperanza llamó a IT antes de hacer nada, como le enseñaron en la última formación de ciberseguridad. El técnico de IT le explicó que era un popup falso y cerró el navegador. La formación funcionó.',
+      edu: '🎓 La formación periódica en ciberseguridad es la inversión más efectiva. Ante cualquier duda sobre popups, alertas o solicitudes inusuales, el protocolo correcto es: (1) No hacer nada en el equipo. (2) Llamar inmediatamente a IT o al responsable de seguridad. (3) No cerrar ventanas maliciosamente diseñadas para que "aceptes" algo al intentar cerrarlas.'
+    }
+  },
+
+  {
+    id: 18,
+    type: 'VENTA FRAUDULENTA',
+    victim: 'Julián "El Tacaño" Morán',
+    role: 'Director de Operaciones',
+    victimDesc: 'Julián busca chollos en internet compulsivamente. Tiene alertas de precio en 200 artículos en Wallapop y Amazon. Si algo tiene un descuento del 70%... su cerebro se apaga completamente. Ha comprado cuatro cosas que no existen por culpa de esto.',
+    thought: 'Julián está buscando un iPhone 15 Pro barato. Sé que lo busca porque lo vi en su historial compartido en el wifi de la oficina. Un anuncio con precio de derribo y una historia emotiva como excusa...',
+    question: '¿Cómo montas la estafa de venta?',
+    options: [
+      { text: '📱 Copias un anuncio real de Wallapop de iPhone 15 Pro, cambias los datos de contacto por los tuyos, pones precio 40% inferior al mercado con excusa "me voy al extranjero urgente", usas fotos y documentación del vendedor original.', type: 'fake_listing', points: 50, success: true },
+      { text: '🚗 Anuncio de coche a precio de derribo con historia de "divorciado urgente vende": solicitas señal por transferencia antes de la "visita" para "reservar". La visita nunca llega.', type: 'fake_car', points: 55, success: true },
+      { text: '🏠 Anuncio de alquiler vacacional de un apartamento que no es tuyo, cobras la señal, la víctima llega y no puede entrar.', type: 'fake_rental', points: 45, success: true },
+      { text: '💬 Le dices en persona que vendes un iPhone barato porque necesitas dinero.', type: 'personal_sell', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '📦',
+      title: '¡Julián ha pagado la señal!',
+      desc: 'El precio imposiblemente bajo y la historia del "me voy al extranjero urgente" desactivaron todos los sensores de alerta de Julián. Pagó 200€ de señal por transferencia. Ahora no apareces, el teléfono no da señal, el anuncio ha desaparecido. Julián aprendió una lección cara.',
+      edu: '🎓 ESTAFA DE VENTA ONLINE: Señales de alerta: (1) Precio significativamente inferior al mercado. (2) El vendedor tiene excusas para no quedar en persona. (3) Pide señal/pago previo por transferencia (irreversible). (4) Comunicación solo por WhatsApp, nunca teléfono. Protección: (1) Usa siempre plataformas que ofrezcan protección al comprador. (2) Nunca pagues señal por transferencia sin verificar la identidad. (3) Desconfía de precios muy por debajo del mercado. (4) Verifica el anuncio original si sospechas de copia.'
+    },
+    failResult: {
+      emoji: '🤝',
+      title: 'Julián insiste en quedar en persona.',
+      desc: 'Julián, veterano de demasiados Wallapops fallidos, insistió en quedar en persona en un espacio público con pago en efectivo. Como no pudiste presentarte, el trato cayó. Julián ha hecho los deberes.',
+      edu: '🎓 Las mejores prácticas para compras de segunda mano: (1) Quedar siempre en espacio público (comisaría de policía, centro comercial). (2) Pago en efectivo o en plataformas con protección al comprador. (3) Verificar el producto antes de pagar. (4) Desconfiar de quienes evitan el contacto presencial. La plataforma de la Policía Nacional "Internet Segura" recoge los fraudes más habituales en compraventa online.'
+    }
+  },
+
+  {
+    id: 19,
+    type: 'MULA DE DINERO',
+    victim: 'Mateo "El Necesitado" Gil',
+    role: 'Becario de Finanzas',
+    victimDesc: 'Mateo cobra 600€ al mes de beca y tiene el alquiler a 750€. Sus cálculos económicos son imposibles. Busca trabajo constantemente en LinkedIn y acepta cualquier entrevista. Cualquier. Entrevista.',
+    thought: 'Mateo es el candidato perfecto para convertir en mula de dinero. Le ofrezco un "trabajo" de gestor de pagos internacionales con comisión del 10%. Sin darse cuenta, estará blanqueando dinero. Él creerá que trabaja legalmente.',
+    question: '¿Cómo lo reclutas como mula?',
+    options: [
+      { text: '💼 LinkedIn mensaje: "Empresa internacional busca Gestor de Pagos Remoto. Recibirás transferencias en tu cuenta y las reenviarás descontando tu 10%. Contrato, alta en SS, trabajo desde casa." Todo parece legal.', type: 'mule_linkedin', points: 60, success: true },
+      { text: '📧 Email de oferta laboral muy elaborada con logo de empresa falsa, contrato PDF profesional, y entrevista por Zoom con cámara desactivada "por política de empresa".', type: 'mule_email', points: 55, success: true },
+      { text: '🤝 Le propones directamente usar su cuenta para recibir dinero a cambio de comisión.', type: 'direct_mule', points: 0, success: false },
+      { text: '📢 Pones un anuncio en el tablón de la oficina: "Se busca mula de dinero, buen sueldo".', type: 'bulletin_board', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '💸',
+      title: '¡Mateo es tu nueva mula!',
+      desc: 'Mateo firmó el "contrato" y ya ha recibido la primera transferencia: 3.400€. Le instruiste para que se quede el 10% (340€) y envíe el resto por Western Union a una cuenta en el extranjero. Mateo cree que es un trabajo legítimo. No sabe que está blanqueando dinero del phishing de Rodrigo.',
+      edu: '🎓 MULA DE DINERO (Money Mule): Las mulas pueden ser responsables penales por blanqueo de capitales aunque actúen de buena fe. Señales de una oferta fraudulenta de mula: (1) Recibir dinero en cuenta y reenviarlo. (2) Comisión muy alta por trabajo fácil. (3) Entrevista sin contacto presencial real. (4) La empresa no puede verificarse. Si recibes estas ofertas: RECHAZA y DENUNCIA. El INCIBE tiene formulario de reporte. La Policía Nacional y Guardia Civil investigan estas redes activamente.'
+    },
+    failResult: {
+      emoji: '🚔',
+      title: 'Mateo lo buscó en Google...',
+      desc: 'Mateo copió el nombre de la empresa en Google y encontró en el primer resultado una alerta de la Policía Nacional: "EMPRESA FALSA UTILIZADA PARA RECLUTAR MULAS". Reenvió el email a la Policía y ahora hay una investigación abierta con tu IP.',
+      edu: '🎓 Antes de aceptar cualquier oferta de trabajo inusual: (1) Busca el nombre de la empresa en Google + "estafa" o "fraude". (2) Verifica en el Registro Mercantil. (3) Comprueba si tiene presencia real verificable (web, redes sociales, empleados en LinkedIn). (4) Reporta ofertas sospechosas al INCIBE (www.incibe.es) o a la Policía Nacional.'
+    }
+  },
+
+  {
+    id: 20,
+    type: 'DOBLE ATAQUE: SMISHING + VISHING',
+    victim: 'Nuria "La Organizada" Campos',
+    role: 'Project Manager',
+    victimDesc: 'Nuria tiene un sistema de gestión de tareas propio, código de colores en el calendario, y lista de reproducción específica para cada tipo de trabajo. Es metódica, eficiente... y cuando hay una urgencia, su sistema se desborda y puede cometer errores.',
+    thought: 'Nuria es demasiado organizada para caer en algo simple. Necesito el combo: primero un SMS que cree la alarma, luego una llamada que la "confirme". La combinación de dos canales le dará credibilidad absoluta.',
+    question: '¿Tu ataque coordinado?',
+    options: [
+      { text: '🎯 COMBO: SMS de BBVA: "Cargo sospechoso de 892€ en su cuenta. Recibirá llamada de nuestro equipo de seguridad." Luego la llamas con VoIP desde número que parece el de BBVA: "Soy Carlos, del Departamento Antifraude..."', type: 'smishing_vishing_combo', points: 75, success: true },
+      { text: '📱 Solo SMS: "Detectamos un acceso no autorizado. Pulse el enlace para bloquear inmediatamente."', type: 'only_sms', points: 35, success: true },
+      { text: '📞 Solo llamada sin SMS previo: "Soy de su banco, hay un fraude en su cuenta."', type: 'only_call', points: 20, success: false },
+      { text: '✉️ Le mandas un email corporativo desde tu dirección real.', type: 'real_corp_email', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🎯',
+      title: '¡El combo perfecto ha funcionado!',
+      desc: 'El SMS creó la alarma. Cuando llegó la llamada "confirmando" exactamente lo que decía el SMS, Nuria lo interpretó como señal de legitimidad. "Carlos del Antifraude" la guió para instalar una "app de verificación segura". Control total del dispositivo. La preparación del ataque coordinado fue clave.',
+      edu: '🎓 COMBO SMISHING + VISHING: El más sofisticado y efectivo. La legitimidad percibida aumenta exponencialmente cuando dos canales "confirman" la misma información. Defensa: (1) Cuelga SIEMPRE si hay urgencia sobre datos bancarios. (2) Llama TÚ al banco al número del reverso de tu tarjeta o de la app oficial. (3) Ningún banco solicita instalar apps por teléfono. (4) El número que aparece en pantalla puede ser falso (caller ID spoofing). El número en pantalla no garantiza la identidad del llamante.'
+    },
+    failResult: {
+      emoji: '📋',
+      title: 'Nuria tiene protocolos para todo.',
+      desc: 'Nuria, ante cualquier llamada bancaria inesperada, tiene un protocolo: cuelga, busca el número oficial del banco, llama ella y verifica. El banco confirmó que no habían enviado ningún SMS ni realizado ninguna llamada. Denuncia presentada.',
+      edu: '🎓 El protocolo de Nuria es exactamente el correcto y debería ser el de todos: ante cualquier contacto no solicitado sobre cuentas bancarias, SIEMPRE colgar y llamar al banco usando el número oficial (reverso de la tarjeta o app). Nunca usar el número que aparece en el SMS o el que te da el llamante.'
+    }
+  },
+
+  {
+    id: 21,
+    type: 'PHISHING PLATAFORMAS STREAMING',
+    victim: 'Víctor "El Cinéfilo" Blanco',
+    role: 'Analista Financiero',
+    victimDesc: 'Víctor comparte cuenta de Netflix con media empresa de forma no oficial. Vive en terror constante a que le bloqueen. Si hay un problema con su suscripción... su mundo se derrumba. Comprueba que funciona tres veces al día.',
+    thought: 'El miedo de Víctor a perder Netflix es tan visceral que ni siquiera necesito mucha elaboración. Un email diciendo que su cuenta será bloqueada... lo tengo.',
+    question: '¿Tu estrategia audiovisual?',
+    options: [
+      { text: '🎬 Email suplantando a Netflix: "Su suscripción ha sido suspendida por actividad inusual. Actualice su método de pago en las próximas 24 horas para continuar disfrutando del servicio." [enlace a web falsa de Netflix]', type: 'netflix_phishing', points: 40, success: true },
+      { text: '📱 SMS: "Netflix: problema con el cobro. Actualice sus datos de pago para evitar la cancelación de su cuenta: [enlace]"', type: 'netflix_sms', points: 35, success: true },
+      { text: '📺 Le dices en persona que hay un error en su cuenta de Netflix.', type: 'netflix_personal', points: 0, success: false },
+      { text: '🎭 Le mandas un email desde "Hulu" (no disponible en España).', type: 'hulu_spain', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🍿',
+      title: '¡Víctor actualizó el método de pago... en tu web!',
+      desc: 'Víctor entró en pánico al ver "suspendida". En 90 segundos había introducido su tarjeta completa en la web falsa de Netflix. La urgencia de las 24 horas eliminó cualquier pensamiento crítico. Ahora tienes sus datos de tarjeta y él tiene una factura mensual que no es de Netflix.',
+      edu: '🎓 PHISHING A PLATAFORMAS DE ENTRETENIMIENTO: Netflix, Spotify, Amazon Prime son objetivos habituales porque generan ansiedad de pérdida inmediata. Protección: (1) Accede SIEMPRE directamente a netflix.com escribiéndolo tú, nunca desde un enlace. (2) Netflix nunca pide datos de pago por email, siempre a través de su propia plataforma. (3) Activa notificaciones de movimientos en tu tarjeta para detectar cargos no autorizados. (4) Usa una tarjeta virtual de un solo uso para suscripciones.'
+    },
+    failResult: {
+      emoji: '🤦',
+      title: 'Hulu no existe en España.',
+      desc: 'Víctor abrió el email, leyó "Hulu" y escribió en el chat de empresa: "¿Alguien sabe qué es Hulu? Me han mandado un email rarísimo". La respuesta de 15 personas fue inmediata: "ESO ES UNA ESTAFA". El thread del chat dura 45 mensajes.',
+      edu: '🎓 Los atacantes que no investigan bien a su víctima cometen errores básicos como este. Para que la ingeniería social funcione, debe ser personalizada y verosímil. Un email sobre un servicio que la víctima no usa es inmediatamente descartado e incluso puede alertar a toda la organización.'
+    }
+  },
+
+  {
+    id: 22,
+    type: 'PHISHING COMPAÑÍA ELÉCTRICA',
+    victim: 'Amparo "La Doméstica" Serrano',
+    role: 'Office Manager',
+    victimDesc: 'Amparo gestiona todos los servicios de la oficina: luz, agua, internet, café, papel higiénico. Si hay una factura que pagar, pasa por sus manos. Si hay un problema con un servicio... Amparo entra en modo emergencia total.',
+    thought: 'Amparo paga facturas de servicios constantemente y tiene acceso a las tarjetas corporativas. Una factura de luz "urgente" o un "problema con el suministro"... y tendrá sus datos en mi poder.',
+    question: '¿Tu fraude energético?',
+    options: [
+      { text: '⚡ Email suplantando a Endesa: "Factura vencida 847€. Para evitar el corte de suministro en las próximas 48h, realice el pago en el siguiente enlace." [web falsa de Endesa con pasarela de pago falsa]', type: 'endesa_phishing', points: 50, success: true },
+      { text: '📞 Llamada suplantando a Iberdrola: "Detectamos un error en su facturación. Para regularizarla y evitar el corte, necesitamos confirmar sus datos bancarios."', type: 'iberdrola_vishing', points: 45, success: true },
+      { text: '📬 Le envías una factura falsa impresa por correo postal con número de cuenta bancaria tuya.', type: 'fake_invoice_postal', points: 15, success: false },
+      { text: '🔌 Desconectas el cuadro eléctrico de la oficina y esperas que te llame.', type: 'cut_electricity', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '⚡',
+      title: '¡Amparo pagó para "evitar el corte"!',
+      desc: 'La amenaza de corte de suministro en 48 horas activó el modo emergencia de Amparo. Pagó los 847€ sin verificar si realmente había una factura pendiente. La web falsa de Endesa era perfecta: logo, colores, formulario de pago... todo clonado a la perfección.',
+      edu: '🎓 PHISHING A COMPAÑÍAS ELÉCTRICAS: Endesa, Iberdrola y Naturgy son muy suplantadas. Siempre: (1) Verifica el estado de tu contrato DIRECTAMENTE en la web oficial o app de la compañía. (2) Las compañías eléctricas nunca cortan el suministro sin aviso previo por carta certificada. (3) Llama al número oficial si tienes dudas, no al que aparece en el email. (4) Los plazos muy cortos ("48 horas") son señal de alarma de ingeniería social.'
+    },
+    failResult: {
+      emoji: '📋',
+      title: 'Amparo tiene el excel de facturas.',
+      desc: 'Amparo comparó la supuesta factura con su registro de pagos: habían pagado Endesa hace 8 días. Llamó directamente a Endesa (número del reverso de la factura real) y le confirmaron que todo estaba al corriente. Denuncia presentada en la OCU y en la Policía.',
+      edu: '🎓 Mantener un registro de pagos y facturas actualizadas es una defensa sencilla y efectiva. Ante cualquier comunicación de urgencia de un proveedor: (1) Verifica en tus propios registros. (2) Llama al número oficial de la empresa usando el que ya tenías, no el del mensaje. (3) Nunca uses el enlace del mensaje sospechoso.'
+    }
+  },
+
+  {
+    id: 23,
+    type: 'INGENIERÍA SOCIAL AVANZADA',
+    victim: 'Roberto "El Metódico" Cano',
+    role: 'Responsable de Seguridad IT',
+    victimDesc: 'Roberto es el responsable de seguridad. Conoce todos los trucos. Ha implementado la política de contraseñas, el doble factor, el antivirus corporativo. Es tu jefe burocrático. Y tiene un ego del tamaño de un servidor de rack. Atacar a Roberto es el reto definitivo.',
+    thought: 'Roberto no cae en técnicas simples. Necesito algo más elaborado: un pretexto técnico muy específico que active su ego de "experto". Si le hago sentir que SÉ cosas que él no sabe... picará.',
+    question: '¿Tu ataque al experto?',
+    options: [
+      { text: '🔐 Le contactas como "investigador de seguridad" con un pretexto técnico muy específico: "Hemos detectado una vulnerabilidad crítica en el sistema de autenticación de su empresa. Para verificar si están afectados, necesito que acceda a esta URL de diagnóstico..." (Es una trampa)', type: 'expert_social', points: 80, success: true },
+      { text: '📊 Le envías un informe técnico falso (PDF con malware) sobre "amenazas emergentes específicas para su sector", que él abrirá por curiosidad profesional.', type: 'expert_malware', points: 70, success: true },
+      { text: '📧 Le mandas el mismo phishing bancario genérico que mandas a todos.', type: 'generic_phishing', points: 0, success: false },
+      { text: '🏆 Le dices que ganó el "Premio al Mejor Responsable de Seguridad del Año".', type: 'fake_award', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🔐',
+      title: '¡El experto ha caído por su ego!',
+      desc: 'El pretexto técnico específico activó la curiosidad profesional de Roberto. "Una vulnerabilidad que él aún no conoce" activó su ego. Accedió a la URL de diagnóstico que capturó sus credenciales de administrador. Con acceso de admin... tienes las llaves del reino.',
+      edu: '🎓 INGENIERÍA SOCIAL AVANZADA (Spear Phishing): Los ataques personalizados son los más difíciles de detectar. Los expertos en seguridad también son vulnerables cuando el pretexto apela a su ego o curiosidad profesional. Regla para profesionales de seguridad: el mismo escepticismo que aplicas profesionalmente, aplícalo a ti mismo. La verificación fuera de banda (contactar al supuesto remitente por canal conocido y separado) es siempre necesaria.'
+    },
+    failResult: {
+      emoji: '💀',
+      title: 'Roberto sí que sabe.',
+      desc: 'Roberto identificó el ataque en 8 segundos. Respondió con terminología técnica muy específica haciéndote creer que estaba cooperando mientras rastreaba tu IP. Ahora hay un informe de incidente detallado con todos los datos del ataque. Felicidades: has educado a Roberto sobre un vector de ataque nuevo que ahora añadirá a su política de seguridad.',
+      edu: '🎓 Los profesionales de seguridad bien formados practican "security by default": verificación de identidad por canal separado, sandboxing de archivos sospechosos, análisis de cabeceras de emails. La formación continua en ciberseguridad es especialmente importante para los propios responsables de seguridad, que son objetivos de alto valor.'
+    }
+  },
+
+  {
+    id: 24,
+    type: 'PHISHING OPERADORA TELEFÓNICA',
+    victim: 'Diana "La Conectada" Reyes',
+    role: 'Directora de Ventas',
+    victimDesc: 'Diana tiene contrato con Movistar para ella, su marido, sus hijos y el perro (el perro no tiene teléfono, pero lo menciona en el contrato familiar). Si hay un problema con cualquiera de las líneas... su productividad se desintegra. Y acaba de recibir la factura del mes.',
+    thought: 'Diana acaba de renovar su contrato con Movistar y está pendiente de la portabilidad de su hija. Un email de "problema con la portabilidad" en el momento exacto... es demasiado oportuno para no intentarlo.',
+    question: '¿Tu ataque telefónico?',
+    options: [
+      { text: '📱 Email suplantando a Movistar: "La portabilidad de la línea 6XX XXX XXX ha sido solicitada por un tercero. Si no reconoce esta operación, verifique sus datos de acceso urgentemente para cancelarla." [enlace falso]', type: 'movistar_phishing', points: 45, success: true },
+      { text: '💳 SMS de Movistar: "Su factura de 127€ está pendiente de pago. Para evitar la suspensión del servicio, realice el pago en: [enlace]"', type: 'movistar_sms', points: 40, success: true },
+      { text: '📞 La llamas diciendo ser de Movistar y que tiene una "incidencia técnica".', type: 'movistar_call', points: 20, success: false },
+      { text: '📺 Le mandas un email de "Jazztel" cuando es cliente de Movistar.', type: 'wrong_operator', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '📶',
+      title: '¡Diana cancelando la portabilidad falsa!',
+      desc: 'La mención específica del número de teléfono de su hija en el email (que obtuviste de las redes sociales) dio una credibilidad aplastante al ataque. Diana accedió a la web falsa de Movistar, introdujo sus credenciales de cliente... y datos bancarios "para verificar identidad". Tienes todo.',
+      edu: '🎓 PHISHING A OPERADORAS: La personalización (mencionar tu número real, tu operadora real) hace el ataque mucho más creíble. Las operadoras NUNCA piden credenciales o datos bancarios por email para cancelar portabilidades. Si recibes algo similar: (1) Accede directamente a Mi Movistar/Mi Vodafone escribiendo la URL. (2) Llama al número de atención al cliente oficial. (3) Los datos de portabilidad NO se pueden cancelar simplemente "verificando identidad" online.'
+    },
+    failResult: {
+      emoji: '🔇',
+      title: 'Operadora incorrecta.',
+      desc: 'Diana leyó "Jazztel" y respondió: "No soy cliente de Jazztel." Luego lo reenvió al departamento de IT con un "¿esto es una estafa?". Sí, Diana. Es una estafa.',
+      edu: '🎓 Los ataques de phishing masivos (no personalizados) fallan frecuentemente porque se envían a personas que no son clientes del servicio suplantado. Los ataques más peligrosos son los personalizados (spear phishing) donde el atacante ha investigado previamente a la víctima para conocer qué servicios usa.'
+    }
+  },
+
+  {
+    id: 25,
+    type: 'FRAUDE DEL CEO AVANZADO',
+    victim: 'Lorena "La Obediente" Castro',
+    role: 'Contable Junior',
+    victimDesc: 'Lorena lleva 8 meses en la empresa y hace TODO lo que le piden sin preguntar. Todo. Le pidieron que ordenara 3000 archivos por fecha y los ordenó. Le pidieron que comprara el regalo de jubilación del director y eligió perfectamente. Si el CEO le pide algo... no cuestiona.',
+    thought: 'Lorena es el objetivo perfecto para el fraude del CEO. Acceso a cuentas bancarias de la empresa + disposición total a obedecer sin preguntar + poca experiencia para dudar. La combinación ideal.',
+    question: '¿Tu fraude del CEO?',
+    options: [
+      { text: '📧 Email desde ceo@tecnofiable-corp.es (dominio similar): "Lorena, necesito que realices una transferencia urgente y confidencial de 18.500€ a la cuenta adjunta. Es para cerrar una operación internacional. No lo comentes con nadie hasta que esté completada. Tenemos que hablar solo por email."', type: 'ceo_lorena', points: 85, success: true },
+      { text: '🎭 Primero llamas haciéndote pasar por el CEO para "preparar" a Lorena: "Voy a mandarte un email importante, hazlo cuanto antes." Luego el email llega como confirmación.', type: 'ceo_call_first', points: 90, success: true },
+      { text: '📧 Email desde tu cuenta personal gmail: "Hola Lorena, soy el CEO, necesito una transferencia urgente."', type: 'gmail_ceo', points: 0, success: false },
+      { text: '💬 Le mandas un WhatsApp desde tu número personal diciendo ser el CEO.', type: 'whatsapp_ceo', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '💸',
+      title: '¡Transferencia realizada!',
+      desc: 'La combinación de urgencia + confidencialidad + autoridad del CEO fue irresistible para Lorena. Realizó la transferencia de 18.500€ antes de comer. No lo comentó con nadie "como pidió el CEO". Para cuando el CEO real llegó por la tarde, el dinero llevaba horas en una cuenta en el extranjero.',
+      edu: '🎓 FRAUDE DEL CEO (BEC - Business Email Compromise): Causa pérdidas millonarias a empresas. Señales de alarma: (1) Urgencia + confidencialidad juntas. (2) Instrucción de no comunicarlo a nadie. (3) Solo por email, sin confirmación por teléfono. (4) Transferencia a cuenta nueva. PROTOCOLO ESENCIAL: Cualquier transferencia no rutinaria debe verificarse siempre por teléfono con el solicitante usando un número conocido previamente. Este protocolo, bien establecido, hace imposible el fraude del CEO.'
+    },
+    failResult: {
+      emoji: '📱',
+      title: 'Lorena tiene protocolo.',
+      desc: 'Lorena, siguiendo el protocolo de transferencias que le explicaron cuando entró (verificación doble por teléfono), llamó al CEO directamente. El CEO confirmó que no había enviado ningún email. Se ha activado el protocolo de incidente de seguridad.',
+      edu: '🎓 Los protocolos de autorización de transferencias son la defensa más efectiva contra el fraude del CEO. Elementos clave: (1) Verificación obligatoria por segundo canal para transferencias no rutinarias. (2) El canal de verificación debe ser independiente del que originó la solicitud. (3) Umbrales de importe que activan verificación adicional. (4) Lista blanca de cuentas autorizadas. La formación de empleados como Lorena es inversión que se amortiza.'
+    }
+  },
+
+  {
+    id: 26,
+    type: 'INGENIERÍA SOCIAL + USB',
+    victim: 'Héctor "El Cotilla" Vargas',
+    role: 'Responsable de IT Junior',
+    victimDesc: 'Héctor conecta TODO lo que encuentra al ordenador. Todo. Un USB olvidado en la fotocopiadora lo conecta "para ver de quién es". Un cable desconocido lo prueba. Si tiene un ratón inalámbrico, lo empareja al primer receptor que encuentra. Es una vulnerabilidad andante.',
+    thought: 'Para Héctor no necesito enviar nada. Solo necesito dejar un USB "perdido" en un lugar estratégico con una etiqueta irresistible. Su curiosidad hará el resto.',
+    question: '¿Qué pone en la etiqueta del USB trampa?',
+    options: [
+      { text: '💰 USB con etiqueta: "NÓMINAS CONFIDENCIALES DIRECCIÓN 2024" dejado en la sala de descanso. Contiene malware que se ejecuta automáticamente.', type: 'usb_salary', points: 60, success: true },
+      { text: '🎬 USB con etiqueta: "FIESTA EMPRESA - FOTOS NO APTAS 😏" dejado junto a la fotocopiadora.', type: 'usb_party', points: 55, success: true },
+      { text: '🔐 USB con etiqueta: "PASSWORDS SERVIDOR PRODUCCIÓN" en el parking de la empresa.', type: 'usb_parking', points: 65, success: true },
+      { text: '📁 USB con etiqueta: "USB" dejado en cualquier sitio sin más.', type: 'usb_plain', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '💾',
+      title: '¡Héctor ha conectado el USB!',
+      desc: '"NÓMINAS CONFIDENCIALES" fue irresistible. Héctor lo conectó en su propio equipo de trabajo (el de IT con acceso elevado). El malware se ejecutó automáticamente, estableció persistencia y comenzó a exfiltrar credenciales de administrador. Conectar un USB desconocido en el equipo de IT tiene consecuencias épicas.',
+      edu: '🎓 BAITING (USB trampa): Técnica de ingeniería social física muy efectiva. En experimentos controlados, el 48-98% de los USBs "perdidos" son conectados por quienes los encuentran. NUNCA conectes USBs de origen desconocido. Las organizaciones deben: (1) Bloquear puertos USB no autorizados. (2) Entrenar a empleados sobre este riesgo. (3) Establecer proceso de entrega de dispositivos encontrados (llevar a IT, NO conectar). Si encuentras un USB: LLÉVALO A IT SIN CONECTARLO.'
+    },
+    failResult: {
+      emoji: '🤷',
+      title: 'Un USB sin etiqueta es simplemente un USB.',
+      desc: 'Héctor encontró el USB, lo conectó (claro), y estaba vacío. Lo tiró. Sin la etiqueta irresistible, no hay ingeniería social que funcione.',
+      edu: '🎓 La ingeniería social funciona porque activa motivaciones humanas: curiosidad, codicia, miedo, urgencia, autoridad. Sin un "gancho" psicológico efectivo, los ataques físicos fallan. Las etiquetas como "NÓMINAS", "CONTRASEÑAS" o "FOTOS PRIVADAS" explotan la curiosidad y el morbo humano.'
+    }
+  },
+
+  {
+    id: 27,
+    type: 'PHISHING ALMACENAMIENTO CLOUD',
+    victim: 'Cristina "La Documentada" Fuente',
+    role: 'Jefa de Proyectos',
+    victimDesc: 'Cristina tiene toda la vida en Google Drive. Todo. Documentos de proyectos, fotos de vacaciones, declaración de la renta, escaneos del DNI... Si pierde acceso a Google Drive, pierde 8 años de vida digital. No puede dormir pensando en ello.',
+    thought: 'El terror de Cristina a perder Google Drive es tan visceral que cualquier amenaza a su cuenta la paralizará. Una notificación de "almacenamiento lleno" o "cuenta comprometida"...',
+    question: '¿Tu ataque cloud?',
+    options: [
+      { text: '☁️ Email suplantando a Google: "Su cuenta de Google Drive ha sido accedida desde un dispositivo desconocido en Moscú. Verifique inmediatamente su identidad para asegurar su cuenta." [web falsa de Google idéntica]', type: 'google_phishing', points: 45, success: true },
+      { text: '💾 Email de Google: "Su almacenamiento de 15GB está al 100%. Para evitar la pérdida de datos, amplíe su plan ahora." [enlace a pasarela de pago falsa]', type: 'google_storage', points: 40, success: true },
+      { text: '📧 Le mandas el email desde accounts.google.com.security-alert.phishing.ru', type: 'obvious_domain', points: 0, success: false },
+      { text: '🤝 Le propones "ayudarla a organizar su Drive" accediendo a su cuenta.', type: 'drive_help', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '☁️',
+      title: '¡Cristina ha "verificado" su cuenta!',
+      desc: 'La mención de "Moscú" activó el terror de Cristina. La web falsa de Google era idéntica a la real. Introdujo sus credenciales de Google. Con acceso a su cuenta de Google tienes acceso a todo: Drive, Gmail, fotos, historial de Chrome, documentos. Y el acceso a su email permite restablecer contraseñas de todos sus otros servicios.',
+      edu: '🎓 PHISHING A SERVICIOS CLOUD: Google, Microsoft OneDrive y Dropbox son muy suplantados. El acceso a la cuenta de email es especialmente crítico: permite restablecimiento de contraseñas de TODO el resto de servicios. Protección indispensable: (1) Activa verificación en dos pasos en Google/Microsoft (clave de seguridad física o app autenticadora). (2) Revisa actividad reciente en myaccount.google.com. (3) Verifica que la URL es exactamente accounts.google.com, no similar. Con 2FA activado, aunque roben tu contraseña, no pueden entrar.'
+    },
+    failResult: {
+      emoji: '🔍',
+      title: 'Ese dominio no engaña a nadie.',
+      desc: 'Cristina vio el dominio del remitente: "security-alert.phishing.ru". Hizo pantallazos, lo reportó a Google y al INCIBE. También lo publicó en LinkedIn como "ejemplo de phishing". Ya tiene 340 reacciones.',
+      edu: '🎓 El dominio del remitente es el indicador más fácil de verificar y el que más frecuentemente delata el phishing. Siempre mira la dirección COMPLETA del remitente, no solo el nombre visible. Los servicios legítimos de Google usan exclusivamente dominios @google.com, @accounts.google.com, etc. Cualquier variación es fraude.'
+    }
+  },
+
+  {
+    id: 28,
+    type: 'SHOULDER SURFING',
+    victim: 'Germán "El Despistado" Mora',
+    role: 'Director General Adjunto',
+    victimDesc: 'Germán trabaja en bares, cafeterías y espacios abiertos constantemente. Laptop con pantalla enorme sin filtro de privacidad, teléfono con el PIN visible desde Saturno, y la costumbre de decir en voz alta los números de tarjeta cuando compra por teléfono. Es un tesoro andante.',
+    thought: 'Con Germán no necesito tecnología. Solo necesito sentarme cerca de él en la cafetería de la esquina donde trabaja todos los martes con su MacBook sin filtro de privacidad... y observar.',
+    question: '¿Qué capturas primero?',
+    options: [
+      { text: '👀 Te sientas detrás de Germán en la cafetería con tu propia laptop y copias visualmente sus credenciales bancarias mientras accede a la banca online.', type: 'shoulder_banking', points: 45, success: true },
+      { text: '📱 Observas el PIN de su móvil cuando lo desbloquea en el metro, luego "accidentalmente" haces que lo deje en el suelo...', type: 'shoulder_pin', points: 40, success: true },
+      { text: '🤓 Te sientas a su lado y lees directamente su pantalla de forma muy obvia.', type: 'obvious_look', points: 0, success: false },
+      { text: '📸 Sacas el móvil y fotografías su pantalla abiertamente.', type: 'photo_screen', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '👁️',
+      title: '¡Datos capturados visualmente!',
+      desc: 'Germán tecleó sus credenciales bancarias en la cafetería concurrida sin ningún filtro de privacidad y sin comprobar quién había alrededor. Tienes usuario, contraseña y el número de cuenta. El "shoulder surfing" sigue siendo una técnica efectiva en espacios públicos.',
+      edu: '🎓 SHOULDER SURFING: Técnica de espionaje visual. Sencilla pero efectiva. Protecciones: (1) Usa filtros de privacidad en pantalla en espacios públicos (los venden para todos los modelos). (2) Cubre el teclado con la mano al introducir PINs. (3) Evita introducir datos sensibles en espacios públicos concurridos. (4) Coloca el laptop contra una pared. (5) Para móviles: usa reconocimiento facial o huella en lugar de PIN numérico (mucho más difícil de interceptar visualmente).'
+    },
+    failResult: {
+      emoji: '👋',
+      title: 'Germán te vio venir.',
+      desc: 'Germán levantó la vista, te vio leyendo su pantalla de forma obvia, y giró el laptop. Luego te preguntó si "necesitabas algo". Ahora es incómodo cada vez que os cruzáis en la oficina.',
+      edu: '🎓 El shoulder surfing exitoso requiere discreción total. En la práctica real, los atacantes usan cámaras de alta resolución a distancia, ángulos de visión indirectos, o se mezclan con el entorno. La consciencia situacional (saber quién hay alrededor cuando introduces datos sensibles) es una defensa efectiva y sencilla.'
+    }
+  },
+
+  {
+    id: 29,
+    type: 'PHISHING VIDEOJUEGOS',
+    victim: 'Kevin "El Gamer" López',
+    role: 'Programador Junior',
+    victimDesc: 'Kevin tiene skins de Fortnite por valor de 800€ y cuenta de Steam con 340 juegos. Su identidad digital es más importante para él que la real. Si pierde su cuenta de Steam... lloraría. De verdad. Y hay un torneos de Counter-Strike este fin de semana que para él es sagrado.',
+    thought: 'Para Kevin, su cuenta de Steam es su templo. Un email de Steam diciendo que hay actividad sospechosa antes del torneo del fin de semana... el timing es perfecto para maximizar el pánico.',
+    question: '¿Tu ataque gamer?',
+    options: [
+      { text: '🎮 Email suplantando a Steam: "Hemos detectado intentos de acceso no autorizados a su cuenta desde Rusia. Su cuenta será suspendida en 2 horas si no verifica su identidad. [Verificar ahora]" — Enviado el viernes por la tarde.', type: 'steam_phishing', points: 45, success: true },
+      { text: '🎁 Mensaje en Discord de cuenta falsa de "Steam Support": "¡Has ganado un juego gratuito! Para reclamarlo, inicia sesión con tus credenciales de Steam en este enlace."', type: 'discord_phishing', points: 40, success: true },
+      { text: '🤝 Le dices en persona que te deje su cuenta de Steam "un momento para ver algo".', type: 'ask_steam', points: 0, success: false },
+      { text: '📧 Email de "Fortnight" (sin e) diciéndole que ganó V-Bucks.', type: 'fortnite_typo', points: 0, success: false }
+    ],
+    successResult: {
+      emoji: '🎮',
+      title: '¡Kevin verificando con pánico!',
+      desc: 'El viernes por la tarde, con el torneo del sábado en mente, Kevin recibió la alerta de Steam. Entró en pánico total. La web falsa de Steam era perfecta. Introdujo credenciales + código de autenticación en tiempo récord. Con acceso a su cuenta Steam tienes 340 juegos, sus datos de tarjeta guardados, y acceso para vaciar el inventario de skins.',
+      edu: '🎓 PHISHING A PLATAFORMAS DE GAMING: Steam, Epic Games, PlayStation Network son objetivos habituales. El timing (antes de eventos importantes) maximiza el pánico y reduce el pensamiento crítico. Protecciones: (1) Steam Guard con aplicación autenticadora (no SMS). (2) Nunca inicies sesión desde enlaces en emails o Discord. (3) Steam nunca contacta por Discord para asuntos de cuenta. (4) La URL de Steam es siempre store.steampowered.com o steamcommunity.com, sin variaciones.'
+    },
+    failResult: {
+      emoji: '🕹️',
+      title: '"Fortnight" no existe.',
+      desc: 'Kevin, siendo programador, notó el error tipográfico en "Fortnight" al microsegundo. Lo compartió en el server de Discord de la empresa como "Phishing de nivel principiante". Tiene 47 memes ya.',
+      edu: '🎓 Los errores tipográficos en nombres de marcas conocidas son señales de phishing inmediatas. "Fortnight" en lugar de "Fortnite", "Amazón" en lugar de "Amazon", etc. Los usuarios familiarizados con una plataforma detectan estas diferencias instantáneamente. Para los atacantes, esto es una filtración de víctimas: quien no nota el error es quien más probablemente caerá.'
+    }
+  },
+
+  {
+    id: 30,
+    type: 'EPÍLOGO: EL GRAN FRAUDE FINAL',
+    victim: '¡¡TODA LA EMPRESA!!',
+    role: 'Campaña masiva de phishing interno',
+    victimDesc: 'Has llegado al final. Llevas semanas actuando por la espalda, sembrando el caos. Ahora planeas el golpe maestro: una campaña coordinada que afecte a toda la empresa simultáneamente. Pero algo pasa...',
+    thought: 'Tengo acceso a casi todos los sistemas. He aprendido todos los métodos. Ha llegado el momento del gran golpe. Pero... ¿y si hay consecuencias? ¿Qué dice exactamente el Código Penal sobre todo esto?',
+    question: '¿Cuál es tu movimiento final?',
+    options: [
+      { text: '🚨 Ejecutas la campaña masiva: email a toda la empresa desde una cuenta clonada del CEO con instrucción de "actualizar credenciales corporativas" en una web falsa interna.', type: 'mass_campaign', points: 100, success: true },
+      { text: '🤝 DECIDES PARAR. Recopilas todo lo aprendido sobre los métodos de fraude y lo conviertes en una presentación de formación para la empresa. Usas tu conocimiento para el bien.', type: 'good_ending', points: 0, success: false, special: 'good' },
+      { text: '🏃 Borras todas las evidencias y finges que nada ha pasado.', type: 'run', points: 0, success: false },
+      { text: '📚 Te dedicas a estudiar ciberseguridad de forma ética y certificada (CEH, OSCP...) en lugar de ciberdelincuencia.', type: 'study', points: 0, success: false, special: 'study' }
+    ],
+    successResult: {
+      emoji: '⚖️',
+      title: '¡CASO CERRADO — DETENIDO!',
+      desc: 'La campaña masiva fue el error que faltaba. Roberto (el de seguridad) la detectó en 12 minutos. La Policía Nacional localizó tu IP real. Tienes cargos por: estafa informática (art. 249 CP), acceso ilegal a sistemas (art. 197 bis CP), falsificación de documentos digitales, blanqueo de capitales y pertenencia a organización criminal. Pena estimada: 4-8 años.',
+      edu: '🎓 CONSECUENCIAS LEGALES: El Código Penal tipifica todos los delitos de este juego. Artículo 249 (estafa informática): hasta 6 años. Artículo 197 bis (acceso ilegal): hasta 5 años. Artículo 399 bis (falsificación de tarjetas): hasta 8 años. Blanqueo de capitales: hasta 6 años. Los ciberdelincuentes son perseguidos activamente por Policía Nacional (Unidad de Ciberdelincuencia), Guardia Civil (GDT) y Europol/FBI en cooperación internacional. Las penas se suman. Este juego era EDUCATIVO: conocer cómo funcionan los ataques es la mejor defensa.'
+    },
+    failResult: {
+      emoji: '🎓',
+      title: '¡FINAL BUENO!',
+      desc: '¡Enhorabuena! Decidiste usar tu conocimiento para el bien. Ahora sabes exactamente cómo funcionan el phishing, smishing, vishing, malware, skimming, carding, pharming y todos los fraudes digitales. Eso te convierte en el empleado más valioso para la ciberseguridad de tu empresa. ¡Este era el objetivo real del juego!',
+      edu: '🎓 FINAL EDUCATIVO: Si has llegado hasta aquí, conoces todos los métodos de fraude descritos en los Temas 7 y 8 de Legislación, Regulación y Cumplimiento. Este conocimiento es tu escudo. Compártelo con tu entorno: familia, amigos, compañeros. La concienciación colectiva es la defensa más efectiva contra el cibercrimen. Recursos: INCIBE (incibe.es), OSI (osi.es), Policía Nacional Ciberdelincuencia.'
+    }
+  }
+];
+
+// ========== GAME FUNCTIONS ==========
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function updateStats() {
+  document.getElementById('statName').textContent = state.name || '???';
+  document.getElementById('statEvil').textContent = state.evilPoints;
+  document.getElementById('statVictims').textContent = state.victims;
+  document.getElementById('statSuspicion').textContent = Math.min(state.suspicion, 100) + '%';
+  document.getElementById('statCase').textContent = state.caseIndex + '/' + shuffledCases.length;
+  document.getElementById('statsBar').style.display = 'flex';
+}
+
+function startGame() {
+  const name = document.getElementById('playerName').value.trim() || 'Anónimo/a';
+  const genero = document.getElementById('generoSelect').value;
+  state.name = name;
+  state.genero = genero;
+  state.evilPoints = 0;
+  state.victims = 0;
+  state.suspicion = 0;
+  state.caseIndex = 0;
+  state.successCount = 0;
+  state.failCount = 0;
+  shuffleCases();
+  updateStats();
+  loadCase();
+  showScreen('screenCase');
+}
+
+function loadCase() {
+  if (state.caseIndex >= shuffledCases.length) {
+    showFinal();
+    return;
+  }
+  const c = shuffledCases[state.caseIndex];
+  const progress = ((state.caseIndex) / shuffledCases.length) * 100;
+  document.getElementById('progressFill').style.width = progress + '%';
+
+  let optionsHTML = c.options.map((opt, i) => `
+    <button class="option-btn" onclick="chooseOption(${i})">
+      ${opt.text}
+    </button>
+  `).join('');
+
+  document.getElementById('caseContent').innerHTML = `
+    <div class="case-header">
+      <div class="case-num">CASO ${c.id} DE ${cases.length}</div>
+      <div class="case-type-badge">${c.type}</div>
+    </div>
+
+    <div class="victim-card">
+      <div class="victim-name">🎯 ${c.victim}</div>
+      <div class="victim-role">${c.role}</div>
+      <div class="victim-desc">${c.victimDesc}</div>
+    </div>
+
+    <div class="evil-thought">${c.thought}</div>
+
+    <div style="margin-top:20px">
+      <div class="options-title">⚡ ELIGE TU MOVIMIENTO:</div>
+      ${optionsHTML}
+    </div>
+
+    <div style="text-align:right;margin-top:8px">
+      <button class="btn btn-outline" onclick="skipCase()" style="font-size:0.75rem;padding:8px 16px;opacity:0.6">
+        ⏭️ Saltar caso
+      </button>
+    </div>
+  `;
+  updateStats();
+}
+
+function chooseOption(optionIndex) {
+  const c = shuffledCases[state.caseIndex];
+  const opt = c.options[optionIndex];
+  
+  // Determine if this is success or fail
+  const isSuccess = opt.success;
+  const result = isSuccess ? c.successResult : c.failResult;
+  
+  // Update state
+  if (isSuccess) {
+    state.evilPoints += opt.points;
+    state.victims += 1;
+    state.suspicion += Math.floor(Math.random() * 8) + 5;
+    state.successCount++;
+    showScoreFlash('+' + opt.points, '#e74c3c');
+  } else {
+    if (opt.special === 'good' || opt.special === 'study') {
+      state.evilPoints += 0;
+      showScoreFlash('¡BUEN FIN!', '#27ae60');
+    } else {
+      state.suspicion += Math.floor(Math.random() * 15) + 10;
+      showScoreFlash('FALLIDO', '#7f8c8d');
+    }
+    state.failCount++;
+  }
+
+  // Show result
+  const resultClass = isSuccess ? 'success' : 'fail';
+  
+  document.getElementById('resultContent').innerHTML = `
+    <div class="progress-bar"><div class="progress-fill" style="width:${((state.caseIndex + 1) / cases.length) * 100}%"></div></div>
+    
+    <div class="case-header">
+      <div class="case-num">RESULTADO — CASO ${c.id}</div>
+      <div class="case-type-badge">${c.type}</div>
+    </div>
+
+    <div class="result-panel ${resultClass}">
+      <div class="result-emoji">${result.emoji}</div>
+      <div class="result-title" style="color:${isSuccess ? 'var(--accent2)' : 'var(--green)'}">${result.title}</div>
+      <div class="result-desc">${result.desc}</div>
+      
+      <div class="edu-box">
+        <div class="edu-box-title">📚 LECCIÓN DE CIBERSEGURIDAD</div>
+        <p>${result.edu}</p>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:24px">
+      <button class="btn btn-red" onclick="nextCase()" style="min-width:200px">
+        ${state.caseIndex + 1 >= shuffledCases.length ? '🏁 VER RESULTADO FINAL' : '😈 SIGUIENTE VÍCTIMA →'}
+      </button>
+    </div>
+  `;
+  
+  updateStats();
+  showScreen('screenResult');
+  window.scrollTo(0, 0);
+}
+
+function nextCase() {
+  state.caseIndex++;
+  if (state.caseIndex >= shuffledCases.length) {
+    showFinal();
+  } else {
+    loadCase();
+    showScreen('screenCase');
+    window.scrollTo(0, 0);
+  }
+}
+
+function showFinal() {
+  const totalPossible = shuffledCases.reduce((sum, c) => sum + Math.max(...c.options.map(o => o.points)), 0);
+  const pct = Math.round((state.evilPoints / totalPossible) * 100);
+  
+  let verdict, verdictColor, verdictEmoji;
+  if (pct >= 80) {
+    verdict = '¡CIBERDELINCUENTE MASTER!';
+    verdictColor = '#e74c3c';
+    verdictEmoji = '😈';
+  } else if (pct >= 60) {
+    verdict = 'Estafador/a Competente';
+    verdictColor = '#e67e22';
+    verdictEmoji = '🦊';
+  } else if (pct >= 40) {
+    verdict = 'Aprendiz de Villano/a';
+    verdictColor = '#f39c12';
+    verdictEmoji = '🤔';
+  } else if (pct >= 20) {
+    verdict = 'Demasiado Bueno/a para esto';
+    verdictColor = '#27ae60';
+    verdictEmoji = '😇';
+  } else {
+    verdict = '¡Ciudadano/a Ejemplar!';
+    verdictColor = '#3498db';
+    verdictEmoji = '🏆';
+  }
+
+  document.getElementById('finalContent').innerHTML = `
+    <div class="logo">
+      <div class="logo-title" style="font-size:2rem">INFORME FINAL</div>
+      <div class="logo-sub">EXPEDIENTE ${state.name.toUpperCase()}</div>
+    </div>
+
+    <div class="final-grid">
+      <div class="final-stat">
+        <div class="num" style="color:var(--accent2)">${state.evilPoints}</div>
+        <div class="lbl">PUNTOS DE MALICIA</div>
+      </div>
+      <div class="final-stat">
+        <div class="num" style="color:var(--gold)">${state.victims}</div>
+        <div class="lbl">VÍCTIMAS EXITOSAS</div>
+      </div>
+      <div class="final-stat">
+        <div class="num" style="color:var(--green)">${state.failCount}</div>
+        <div class="lbl">INTENTOS FALLIDOS</div>
+      </div>
+      <div class="final-stat">
+        <div class="num" style="color:var(--evil)">${Math.min(state.suspicion, 100)}%</div>
+        <div class="lbl">SOSPECHA RRHH</div>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-emoji">${verdictEmoji}</div>
+      <div class="verdict-title" style="color:${verdictColor}">${verdict}</div>
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:10px;line-height:1.7">
+        ${state.genero === 'un' ? 'Has sido' : 'Has sido'} <strong>${state.genero} sociópata de oficina</strong> con una puntuación de <strong style="color:${verdictColor}">${pct}%</strong> del máximo posible.
+        Pero lo más importante es lo que has aprendido sobre cómo funcionan realmente el phishing, smishing, vishing, malware, skimming, carding y el resto de fraudes digitales.
+      </p>
+    </div>
+
+    <div class="card card-gold" style="margin-top:20px">
+      <div style="font-family:'Oswald',sans-serif;font-size:1.1rem;color:var(--gold);margin-bottom:12px">📚 LO QUE HAS APRENDIDO HOY</div>
+      <div style="font-family:'Special Elite',cursive;font-size:0.88rem;line-height:1.8;color:var(--text)">
+        ✅ Cómo funciona el <strong>phishing</strong> (Fase I, II y III)<br>
+        ✅ Diferencias entre <strong>smishing, vishing y whaling</strong><br>
+        ✅ Qué son los <strong>keyloggers y screenloggers</strong><br>
+        ✅ Cómo funciona el <strong>pharming</strong> (envenenamiento DNS)<br>
+        ✅ Qué es el <strong>skimming</strong> y el <strong>skimming digital</strong><br>
+        ✅ Qué es el <strong>carding</strong><br>
+        ✅ Cómo funcionan las <strong>cartas nigerianas</strong><br>
+        ✅ Qué es el <strong>romance scam</strong><br>
+        ✅ Qué son las <strong>mulas de dinero</strong><br>
+        ✅ Cómo detectar <strong>falsos antivirus (rogues)</strong><br>
+        ✅ Las <strong>consecuencias legales</strong> (Código Penal, art. 249 y 399 bis)
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;text-align:center">
+      <div style="font-size:0.75rem;color:var(--muted);letter-spacing:0.15em;margin-bottom:12px">RECURSOS OFICIALES DE CIBERSEGURIDAD</div>
+      <p style="font-size:0.85rem;line-height:1.8">
+        🔐 <strong style="color:var(--gold)">INCIBE:</strong> incibe.es — Denuncias e información<br>
+        🔐 <strong style="color:var(--gold)">OSI:</strong> osi.es — Oficina de Seguridad del Internauta<br>
+        🔐 <strong style="color:var(--gold)">Policía Nacional:</strong> @policia — Alertas en RRSS<br>
+        🔐 <strong style="color:var(--gold)">Guardia Civil GDT:</strong> gdt.guardiacivil.es
+      </p>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;padding-bottom:40px">
+      <button class="btn btn-red" onclick="restartGame()" style="margin-right:12px">
+        🔄 JUGAR DE NUEVO
+      </button>
+      <button class="btn btn-outline" onclick="window.print()">
+        🖨️ IMPRIMIR INFORME
+      </button>
+    </div>
+  `;
+
+  showScreen('screenFinal');
+  window.scrollTo(0, 0);
+}
+
+function restartGame() {
+  state = { name: '', genero: 'un', evilPoints: 0, victims: 0, suspicion: 0, caseIndex: 0, successCount: 0, failCount: 0 };
+  shuffledCases = [];
+  document.getElementById('statsBar').style.display = 'none';
+  document.getElementById('playerName').value = '';
+  showScreen('screenIntro');
+  window.scrollTo(0, 0);
+}
+
+function skipCase() {
+  state.caseIndex++;
+  if (state.caseIndex >= shuffledCases.length) {
+    showFinal();
+  } else {
+    loadCase();
+    showScreen('screenCase');
+    window.scrollTo(0, 0);
+  }
+}
+
+function showScoreFlash(text, color) {
+  const el = document.createElement('div');
+  el.className = 'score-flash';
+  el.style.color = color;
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+</script>
+</body>
+</html>
