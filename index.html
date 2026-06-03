@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOCIÓPATA</title>
+<title>EL SOCIÓPATA — Juego Educativo de Ciberseguridad</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Share+Tech+Mono&family=Oswald:wght@300;700&display=swap');
 
@@ -410,9 +410,69 @@
 
   hr.evil { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
+  /* FILTER SCREEN */
+  .fraud-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+    margin: 20px 0;
+  }
+  .fraud-tile {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .fraud-tile:hover {
+    border-color: var(--accent);
+    background: rgba(192,57,43,0.1);
+    transform: translateY(-2px);
+  }
+  .fraud-tile.selected {
+    border-color: var(--accent2);
+    background: rgba(231,76,60,0.15);
+  }
+  .fraud-tile .ft-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .fraud-tile .ft-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.95rem;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .fraud-tile .ft-count {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .fraud-tile .ft-desc {
+    font-size: 0.75rem;
+    color: var(--text);
+    margin-top: 6px;
+    line-height: 1.5;
+    opacity: 0.8;
+  }
+  .select-all-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .selected-count {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .selected-count span { color: var(--gold); font-weight: bold; }
+
   @media (max-width: 600px) {
     .final-grid { grid-template-columns: 1fr; }
     #statsBar { position: relative; }
+    .fraud-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -446,9 +506,9 @@
   <!-- SCREEN: INTRO -->
   <div id="screenIntro" class="screen active">
     <div class="logo">
-      <div class="logo-title">SOCIÓPATA</div>
-      <div class="logo-sub">SABES QUE SE LO MERECE.</div>
-      <div class="logo-badge">📚 BASADO EN CIBERSEGURIDAD</div>
+      <div class="logo-title">EL SOCIÓPATA</div>
+      <div class="logo-sub">JUEGO EDUCATIVO DE CIBERSEGURIDAD</div>
+      <div class="logo-badge">📚 BASADO EN TEMAS 7 Y 8 — UNIR</div>
     </div>
 
     <div class="card card-red" style="margin-top:30px">
@@ -485,6 +545,39 @@
         😈 EMPEZAR A SER HORRIBLE
       </button>
     </div>
+
+    <div style="text-align:center;margin-top:16px;padding-bottom:30px">
+      <button class="btn btn-outline" onclick="showFilterScreen('intro')" style="width:100%;">
+        🗂️ ELEGIR TIPOS DE FRAUDE
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN: FILTER -->
+  <div id="screenFilter" class="screen">
+    <div class="logo" style="padding:30px 0 10px">
+      <div class="logo-title" style="font-size:2rem">TIPOS DE FRAUDE</div>
+      <div class="logo-sub">SELECCIONA LOS QUE QUIERES PRACTICAR</div>
+    </div>
+
+    <div class="select-all-bar">
+      <div class="selected-count">Seleccionados: <span id="selectedCount">0</span> casos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="selectAllFrauds(true)" style="font-size:0.7rem;padding:6px 14px">✅ Todos</button>
+        <button class="btn btn-outline" onclick="selectAllFrauds(false)" style="font-size:0.7rem;padding:6px 14px">❌ Ninguno</button>
+      </div>
+    </div>
+
+    <div class="fraud-grid" id="fraudGrid"></div>
+
+    <div style="display:flex;gap:10px;margin-top:8px;padding-bottom:40px;flex-wrap:wrap">
+      <button class="btn btn-red" onclick="applyFilter()" style="flex:1;min-width:180px">
+        😈 JUGAR CON SELECCIÓN
+      </button>
+      <button class="btn btn-outline" onclick="goBackFromFilter()" style="flex:1;min-width:140px">
+        ← VOLVER
+      </button>
+    </div>
   </div>
 
   <!-- SCREEN: CASE -->
@@ -518,13 +611,140 @@ let state = {
   failCount: 0
 };
 
-let shuffledCases = [];
+// ========== FRAUD TYPE CATALOGUE ==========
+const fraudTypes = [
+  { id: 'PHISHING',               icon: '🎣', name: 'Phishing',               desc: 'Email fraudulento suplantando bancos, Hacienda, Netflix, Google, Steam...' },
+  { id: 'SMISHING',               icon: '📱', name: 'Smishing',                desc: 'Phishing por SMS/WhatsApp con enlaces maliciosos.' },
+  { id: 'VISHING',                icon: '📞', name: 'Vishing',                 desc: 'Estafa por llamada telefónica suplantando identidad.' },
+  { id: 'WHALING / FRAUDE DEL CEO', icon: '🐋', name: 'Whaling / Fraude CEO',   desc: 'Phishing dirigido a directivos para transferencias fraudulentas.' },
+  { id: 'MALWARE — KEYLOGGER',    icon: '⌨️', name: 'Keylogger',               desc: 'Software que graba las pulsaciones del teclado.' },
+  { id: 'SCREENLOGGER',           icon: '🖥️', name: 'Screenlogger',            desc: 'Captura la pantalla para saltarse los teclados virtuales.' },
+  { id: 'PHARMING',               icon: '🌐', name: 'Pharming',                desc: 'Envenenamiento DNS que redirige al usuario sin que lo sepa.' },
+  { id: 'TROYANO BANCARIO',       icon: '🦠', name: 'Troyano bancario',        desc: 'Malware que roba credenciales bancarias (Zeus, Carberp...).' },
+  { id: 'CARDING',                icon: '💳', name: 'Carding',                 desc: 'Uso fraudulento de datos de tarjeta para compras online.' },
+  { id: 'SKIMMING',               icon: '🏧', name: 'Skimming',                desc: 'Clonación física de tarjetas en cajeros automáticos.' },
+  { id: 'SKIMMING DIGITAL',       icon: '🛒', name: 'Skimming digital',        desc: 'Robo de datos de tarjeta en pasarelas de pago online (Magecart).' },
+  { id: 'CARTA NIGERIANA',        icon: '📜', name: 'Carta nigeriana',         desc: 'Estafa de pago anticipado con promesa de gran recompensa.' },
+  { id: 'ROMANCE SCAM',           icon: '💔', name: 'Romance Scam',            desc: 'Relación sentimental falsa para extraer dinero.' },
+  { id: 'FALSO ANTIVIRUS (ROGUE)', icon: '🛡️', name: 'Falso antivirus (Rogue)', desc: 'Malware que simula ser un antivirus para robar dinero o datos.' },
+  { id: 'MULA DE DINERO',         icon: '💸', name: 'Mula de dinero',          desc: 'Reclutamiento de personas para blanquear dinero.' },
+  { id: 'FRAUDE DEL CEO AVANZADO', icon: '👔', name: 'Fraude CEO avanzado',    desc: 'Whaling con preparación previa y suplantación del CEO real.' },
+  { id: 'VENTA FRAUDULENTA',      icon: '📦', name: 'Venta fraudulenta',       desc: 'Anuncios falsos de venta de vehículos, pisos o productos.' },
+  { id: 'INGENIERÍA SOCIAL + USB', icon: '💾', name: 'Baiting (USB trampa)',    desc: 'USB infectado abandonado estratégicamente.' },
+  { id: 'DOBLE ATAQUE: SMISHING + VISHING', icon: '🎯', name: 'Combo Smishing+Vishing', desc: 'Combinación de SMS + llamada para máxima credibilidad.' },
+  { id: 'PHISHING REDES SOCIALES', icon: '📸', name: 'Phishing redes sociales', desc: 'Suplantación de Instagram, Facebook u otras plataformas.' },
+  { id: 'PHISHING MENSAJERÍA',    icon: '📫', name: 'Phishing mensajería',     desc: 'Suplantación de Correos, DHL, MRW con "paquete retenido".' },
+  { id: 'SHOULDER SURFING',       icon: '👁️', name: 'Shoulder surfing',        desc: 'Espionaje visual de pantallas y teclados en espacios públicos.' },
+  { id: 'INGENIERÍA SOCIAL AVANZADA', icon: '🔐', name: 'Ing. social avanzada', desc: 'Spear phishing personalizado dirigido a expertos en seguridad.' },
+];
+
+let selectedFraudIds = new Set(fraudTypes.map(f => f.id));
+let filterOrigin = 'intro'; // 'intro' | 'case'
+
+function showFilterScreen(origin) {
+  filterOrigin = origin;
+  renderFraudGrid();
+  showScreen('screenFilter');
+  window.scrollTo(0, 0);
+}
+
+function renderFraudGrid() {
+  const grid = document.getElementById('fraudGrid');
+  grid.innerHTML = fraudTypes.map(f => {
+    const count = cases.filter(c => c.type === f.id || c.type.startsWith(f.id)).length;
+    const sel = selectedFraudIds.has(f.id);
+    return `
+      <div class="fraud-tile${sel ? ' selected' : ''}" onclick="toggleFraud('${f.id}')" id="tile-${f.id.replace(/[^a-zA-Z0-9]/g,'_')}">
+        <div class="ft-icon">${f.icon}</div>
+        <div class="ft-name">${f.name}</div>
+        <div class="ft-count">${count} caso${count !== 1 ? 's' : ''}</div>
+        <div class="ft-desc">${f.desc}</div>
+      </div>`;
+  }).join('');
+  updateSelectedCount();
+}
+
+function toggleFraud(id) {
+  if (selectedFraudIds.has(id)) {
+    if (selectedFraudIds.size > 1) selectedFraudIds.delete(id);
+  } else {
+    selectedFraudIds.add(id);
+  }
+  const tileId = 'tile-' + id.replace(/[^a-zA-Z0-9]/g,'_');
+  const tile = document.getElementById(tileId);
+  if (tile) tile.classList.toggle('selected', selectedFraudIds.has(id));
+  updateSelectedCount();
+}
+
+function selectAllFrauds(val) {
+  if (val) {
+    fraudTypes.forEach(f => selectedFraudIds.add(f.id));
+  } else {
+    // Keep at least one
+    selectedFraudIds = new Set([fraudTypes[0].id]);
+  }
+  renderFraudGrid();
+}
+
+function updateSelectedCount() {
+  const matching = cases.filter(c => [...selectedFraudIds].some(id => c.type === id || c.type.startsWith(id))).length;
+  document.getElementById('selectedCount').textContent = matching;
+}
+
+function applyFilter() {
+  // Build filtered pool (always keep last case as finale)
+  const lastCase = cases[cases.length - 1];
+  const pool = cases.slice(0, cases.length - 1).filter(c =>
+    [...selectedFraudIds].some(id => c.type === id || c.type.startsWith(id))
+  );
+  if (pool.length === 0) {
+    alert('Selecciona al menos un tipo de fraude.');
+    return;
+  }
+  // Fisher-Yates on pool
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  shuffledCases = [...pool, lastCase];
+
+  if (filterOrigin === 'intro') {
+    // Need name filled
+    const name = document.getElementById('playerName').value.trim() || 'Anónimo/a';
+    const genero = document.getElementById('generoSelect').value;
+    state.name = name;
+    state.genero = genero;
+    state.evilPoints = 0;
+    state.victims = 0;
+    state.suspicion = 0;
+    state.caseIndex = 0;
+    state.successCount = 0;
+    state.failCount = 0;
+    updateStats();
+    loadCase();
+    showScreen('screenCase');
+  } else {
+    // Coming from mid-game: reset index and reload
+    state.caseIndex = 0;
+    updateStats();
+    loadCase();
+    showScreen('screenCase');
+  }
+  window.scrollTo(0, 0);
+}
+
+function goBackFromFilter() {
+  if (filterOrigin === 'intro') {
+    showScreen('screenIntro');
+  } else {
+    showScreen('screenCase');
+  }
+  window.scrollTo(0, 0);
+}
 
 function shuffleCases() {
-  // Keep last case (the big finale) always at the end
   const lastCase = cases[cases.length - 1];
   const rest = cases.slice(0, cases.length - 1);
-  // Fisher-Yates shuffle
   for (let i = rest.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [rest[i], rest[j]] = [rest[j], rest[i]];
@@ -1441,9 +1661,16 @@ function loadCase() {
       ${optionsHTML}
     </div>
 
+    ${state.caseIndex < shuffledCases.length - 1 ? `
     <div style="text-align:right;margin-top:8px">
       <button class="btn btn-outline" onclick="skipCase()" style="font-size:0.75rem;padding:8px 16px;opacity:0.6">
         ⏭️ Saltar caso
+      </button>
+    </div>` : ''}
+
+    <div style="text-align:center;margin-top:20px;padding-bottom:20px;border-top:1px solid var(--border);padding-top:16px">
+      <button class="btn btn-outline" onclick="showFilterScreen('case')" style="font-size:0.75rem;padding:8px 20px;opacity:0.7">
+        🗂️ Cambiar tipos de fraude
       </button>
     </div>
   `;
